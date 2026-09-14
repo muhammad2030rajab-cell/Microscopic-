@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Building2, Phone, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -1,10 +1,16 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { createFileRoute, Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { Building2, FileText, Settings2, Users } from "lucide-react";
-import { UserButton, useCurrentUserState } from "@/lib/auth/gates";
+import { UserButton } from "@/lib/auth/gates";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 
-export const Route = createFileRoute("/admin")({ component: AdminRoute });
+export const Route = createFileRoute("/admin")({
+  loader: async ({ location }) => ({
+    // Keep first-admin bootstrap accessible before any platform admin exists.
+    isAdmin: location.pathname === "/admin/setup" ? false : await isPlatformAdmin(),
+  }),
+  component: AdminRoute,
+});
 
 function AdminRoute() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -13,28 +19,9 @@ function AdminRoute() {
 }
 
 function AdminDashboard() {
-  const { user, isPending } = useCurrentUserState();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const { isAdmin } = Route.useLoaderData();
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!user) {
-      setIsAdmin(false);
-      return () => { cancelled = true; };
-    }
-    setIsAdmin(null);
-    void isPlatformAdmin()
-      .then((value) => {
-        if (!cancelled) setIsAdmin(value);
-      })
-      .catch(() => {
-        if (!cancelled) setIsAdmin(false);
-      });
-    return () => { cancelled = true; };
-  }, [user]);
-
-  if (isPending || (user && isAdmin === null)) return <main className="grid min-h-screen place-items-center">جارٍ التحقق…</main>;
-  if (!user || !isAdmin) return <Navigate to="/login" />;
+  if (!isAdmin) return <Navigate to="/login" />;
 
   return (
     <main className="min-h-screen bg-paper">

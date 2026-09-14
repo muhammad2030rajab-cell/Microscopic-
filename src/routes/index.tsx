@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { ArrowUpLeft, FilePlus2, FlaskConical, TriangleAlert } from "lucide-react";
 import { InstallBanner } from "@/components/install-banner";
 import { AppShell } from "@/components/layout/app-shell";
@@ -8,10 +8,27 @@ import { interpretResult, isCritical } from "@/lib/medical";
 import { useLabStore } from "@/lib/store";
 import { CATEGORIES, TOTAL_TESTS } from "@/lib/tests-catalog";
 import { formatArDate } from "@/lib/utils";
+import { getCurrentAccess, type CurrentAccess } from "@/lib/lab-access";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({
+  loader: async () => {
+    try {
+      return { access: await getCurrentAccess() };
+    } catch {
+      return { access: { type: "none" } as CurrentAccess };
+    }
+  },
+  component: Home,
+});
 
 function Home() {
+  const { access } = Route.useLoaderData();
+  if (access.type === "admin") return <Navigate to="/admin" replace />;
+  if (access.type === "lab") return <Navigate to="/lab" replace />;
+  return <Navigate to="/login" replace />;
+}
+
+function LegacyHome() {
   const lab = useLabStore((s) => s.lab);
   const reports = useLabStore((s) => s.reports);
 
