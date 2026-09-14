@@ -14,6 +14,7 @@ function LabDashboard() {
 
   if (isPending) return <main className="grid min-h-screen place-items-center bg-paper">جارٍ التحقق…</main>;
   if (!user) return <Navigate to="/login" />;
+  if (!lab.is_profile_complete) return <Navigate to="/lab/setup" />;
 
   return (
     <main className="min-h-screen bg-paper">

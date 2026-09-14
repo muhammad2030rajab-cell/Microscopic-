@@ -28,13 +28,18 @@ function Home() {
     <AppShell>
       <section className="relative overflow-hidden rounded-xl border border-line bg-ink px-5 py-7 text-paper sm:px-8 sm:py-9">
         <div className="pointer-events-none absolute inset-y-0 start-0 w-1.5 bg-teal" />
-        <p className="text-[11px] uppercase tracking-[0.22em] text-paper/55">Clinical laboratory</p>
-        <h1 className="mt-2 max-w-xl font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-          {lab.name}
+        <p className="text-[11px] uppercase tracking-[0.22em] text-paper/55">Rajab Laboratory Management System</p>
+        <h1 className="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+          أهلاً بيكم في نظام رجب لإدارة المعامل
         </h1>
-        <p className="mt-2 max-w-lg text-sm leading-relaxed text-paper/70">
-          إصدار تقارير كيمياء حيوية بمراجع حسب الجنس، تفسير فوري، وحسابات تلقائية مثل LDL و eGFR.
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-paper/70">
+          نظام متكامل لإدارة بيانات المعمل والمرضى والتقارير ونتائج التحاليل، مع إمكانية تخصيص بيانات كل معمل وحساباته.
         </p>
+        <div className="mt-5 rounded-md border border-paper/10 bg-paper/5 px-4 py-3">
+          <p className="text-xs text-paper/55">المعمل الحالي</p>
+          <p className="mt-1 font-display text-lg font-semibold">{lab.name}</p>
+          {lab.nameEn ? <p className="mt-0.5 text-xs text-paper/55">{lab.nameEn}</p> : null}
+        </div>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             to="/new"

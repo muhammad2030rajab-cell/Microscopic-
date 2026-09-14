@@ -16,13 +16,8 @@ function AdminLabs() {
   const navigate = useNavigate();
   const [labs, setLabs] = useState<AdminLab[]>(initialLabs);
   const [showForm, setShowForm] = useState(initialLabs.length === 0);
-  const [name, setName] = useState("");
-  const [nameEn, setNameEn] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [doctorName, setDoctorName] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,20 +32,20 @@ function AdminLabs() {
     setSuccess("");
     setLoading(true);
     try {
-      const result = await createLab({ data: { name, nameEn, username, password, phone, address, doctorName } });
+      const result = await createLab({ data: { username, password } });
       setLabs((current) => [{
         id: result.id,
         name: result.name,
-        nameEn: nameEn || null,
+        nameEn: null,
         username: result.username,
-        phone: phone || null,
-        address: address || null,
-        doctorName: doctorName || null,
+        phone: null,
+        address: null,
+        doctorName: null,
         isActive: true,
         createdAt: new Date().toISOString(),
       }, ...current]);
-      setSuccess(`تم إنشاء ${result.name} بنجاح — اسم المستخدم: ${result.username}`);
-      setName(""); setNameEn(""); setUsername(""); setPassword(""); setPhone(""); setAddress(""); setDoctorName("");
+      setSuccess(`تم إنشاء حساب المعمل بنجاح — اسم المستخدم: ${result.username}. عند أول دخول سيكمل المعمل بياناته.`);
+      setUsername(""); setPassword("");
       setShowForm(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذر إنشاء المعمل");
@@ -76,8 +71,8 @@ function AdminLabs() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm text-paper/60">Laboratory network</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold">أضف أول معمل للنظام</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-paper/65">كل معمل سيحصل على حساب مستقل، وبياناته وتقاريره ستظل معزولة عن باقي المعامل.</p>
+              <h2 className="mt-2 font-display text-3xl font-semibold">إنشاء حساب معمل جديد</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-paper/65">أنت تنشئ بيانات الدخول فقط. عند أول تسجيل دخول، المعمل نفسه يكمل الاسم والعنوان والتواصل والبيانات التي ستظهر على التقارير.</p>
             </div>
             <div className="hidden size-12 place-items-center rounded-xl bg-teal/15 text-teal sm:grid"><Building2 className="size-6" /></div>
           </div>
@@ -94,7 +89,7 @@ function AdminLabs() {
             <div className="mt-5 space-y-3">
               {labs.length === 0 ? <p className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-muted">لسه مفيش معامل. أضف أول معمل من النموذج.</p> : labs.map((lab) => (
                 <div key={lab.id} className="rounded-lg border border-line p-4">
-                  <div className="flex items-start gap-3"><div className="grid size-10 shrink-0 place-items-center rounded-lg bg-teal/10 text-teal"><Building2 className="size-5" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{lab.name}</p><span className="rounded-full bg-ok/10 px-2 py-0.5 text-[11px] text-ok">نشط</span></div><p className="mt-1 text-xs text-muted">Username: <span dir="ltr">{lab.username}</span></p>{lab.doctorName ? <p className="mt-1 text-xs text-muted">مدير المعمل: {lab.doctorName}</p> : null}</div></div>
+                  <div className="flex items-start gap-3"><div className="grid size-10 shrink-0 place-items-center rounded-lg bg-teal/10 text-teal"><Building2 className="size-5" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{lab.name}</p><span className={`rounded-full px-2 py-0.5 text-[11px] ${lab.phone && lab.address ? "bg-ok/10 text-ok" : "bg-amber-500/10 text-amber-700"}`}>{lab.phone && lab.address ? "بيانات مكتملة" : "في انتظار بيانات المعمل"}</span></div><p className="mt-1 text-xs text-muted">Username: <span dir="ltr">{lab.username}</span></p>{lab.doctorName ? <p className="mt-1 text-xs text-muted">مدير المعمل: {lab.doctorName}</p> : null}</div></div>
                 </div>
               ))}
             </div>
@@ -103,19 +98,17 @@ function AdminLabs() {
           {showForm ? <section className="rounded-xl border border-line bg-elevated p-5 sm:p-6">
             <div className="mb-6 flex items-center gap-3"><div className="grid size-10 place-items-center rounded-lg bg-teal/10 text-teal"><ShieldCheck className="size-5" /></div><div><h3 className="font-display text-xl font-semibold">بيانات المعمل</h3><p className="text-sm text-muted">البيانات دي هتظهر في تقارير المعمل لاحقًا.</p></div></div>
             <form onSubmit={submit} className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="lab-name" label="اسم المعمل" value={name} onChange={setName} required placeholder="معمل النور" />
-                <Field id="lab-name-en" label="اسم المعمل بالإنجليزية" value={nameEn} onChange={setNameEn} placeholder="Al Noor Lab" dir="ltr" />
+              <div className="rounded-lg border border-teal/20 bg-teal/5 p-4 text-sm leading-6 text-ink-soft">
+                <strong>خطوة المدير:</strong> أنشئ اسم المستخدم وكلمة المرور. لا تحتاج لإدخال بيانات المعمل الآن.
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field id="username" label="اسم المستخدم" value={username} onChange={setUsername} required placeholder="noor_lab" dir="ltr" />
                 <Field id="password" label="كلمة المرور" value={password} onChange={setPassword} required type="password" minLength={8} placeholder="8 أحرف على الأقل" dir="ltr" />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="phone" label="رقم الهاتف" value={phone} onChange={setPhone} placeholder="01xxxxxxxxx" dir="ltr" />
-                <Field id="doctor" label="اسم مدير المعمل" value={doctorName} onChange={setDoctorName} placeholder="د. أحمد محمد" />
+              <div className="rounded-lg border border-line bg-paper/50 p-4">
+                <p className="font-medium">بعد أول دخول 🏥</p>
+                <p className="mt-1 text-sm leading-6 text-muted">سيتم توجيه صاحب الحساب تلقائيًا إلى صفحة إعداد المعمل لإدخال الاسم، العنوان، الهاتف، واتساب، البريد، بيانات الطبيب وغيرها.</p>
               </div>
-              <Field id="address" label="العنوان" value={address} onChange={setAddress} placeholder="العنوان بالتفصيل" />
               {error ? <p className="rounded-lg border border-high/20 bg-high/5 px-3 py-2 text-sm text-high">{error}</p> : null}
               <div className="flex flex-wrap gap-3 pt-2"><Button type="submit" size="lg" disabled={loading}>{loading ? "جارٍ إنشاء المعمل…" : "إنشاء المعمل"}</Button><Button type="button" variant="outline" onClick={() => setShowForm(false)}>إلغاء</Button></div>
             </form>

@@ -72,6 +72,7 @@ export type LabProfileData = {
   doctor_name: string | null;
   doctor_degree: string | null;
   doctor_specialty: string | null;
+  is_profile_complete: boolean;
 };
 
 export const getCurrentLab = createServerFn({ method: "GET" })
@@ -81,7 +82,10 @@ export const getCurrentLab = createServerFn({ method: "GET" })
     const rows = await sql<LabProfileData>`
       select l.id as lab_id, l.name as lab_name, l.name_en as lab_name_en,
              lu.username, lu.role, l.phone, l.whatsapp, l.email, l.website,
-             l.address, l.doctor_name, l.doctor_degree, l.doctor_specialty
+             l.address, l.doctor_name, l.doctor_degree, l.doctor_specialty,
+             (length(trim(coalesce(l.name, ''))) >= 2
+              and length(trim(coalesce(l.phone, ''))) >= 5
+              and length(trim(coalesce(l.address, ''))) >= 5) as is_profile_complete
       from lab_users lu
       inner join labs l on l.id = lu.lab_id
       where lu.auth_user_id = ${context.userId}

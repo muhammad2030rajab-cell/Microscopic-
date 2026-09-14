@@ -102,7 +102,7 @@ export const createLab = createServerFn({ method: "POST" })
   .handler(async ({ context, data }: {
     context: { userId: string };
     data: {
-      name: string;
+      name?: string;
       nameEn?: string;
       username: string;
       password: string;
@@ -117,7 +117,7 @@ export const createLab = createServerFn({ method: "POST" })
   }) => {
     const sql = await assertPlatformAdmin(context.userId);
 
-    const name = data.name.trim();
+    const name = data.name?.trim() || "معمل جديد";
     const username = normalizeUsername(data.username);
     const password = data.password;
 
@@ -127,10 +127,12 @@ export const createLab = createServerFn({ method: "POST" })
     }
     if (password.length < 8) throw new Error("كلمة المرور يجب ألا تقل عن 8 أحرف");
 
-    const duplicate = await sql<{ id: string }>`
-      select id from labs where lower(name) = lower(${name}) limit 1
-    `;
-    if (duplicate.length) throw new Error("اسم المعمل موجود بالفعل");
+    if (name !== "معمل جديد") {
+      const duplicate = await sql<{ id: string }>`
+        select id from labs where lower(name) = lower(${name}) limit 1
+      `;
+      if (duplicate.length) throw new Error("اسم المعمل موجود بالفعل");
+    }
 
     const duplicateUsername = await sql<{ id: string }>`
       select id from lab_users where username = ${username} limit 1
