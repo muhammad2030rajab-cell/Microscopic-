@@ -38,15 +38,20 @@ function AdminDashboard() {
           <p className="mt-3 max-w-2xl text-sm leading-7 text-paper/65">من هنا هنضيف المعامل، ننشئ حسابات المستخدمين، ونتحكم في التقارير والصلاحيات — وكل معمل هيشوف بياناته فقط.</p>
         </section>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Link to="/admin/labs"><AdminCard icon={<Building2 />} title="المعامل" description="إضافة وإدارة المعامل" /></Link>
-          <Link to="/admin/labs"><AdminCard icon={<Users />} title="المستخدمون" description="حسابات وصلاحيات كل معمل" /></Link>
-          <AdminCard icon={<FileText />} title="التقارير" description="متابعة تقارير النظام" />
-          <AdminCard icon={<Settings2 />} title="الإعدادات" description="إعدادات النظام المركزية" />
+          <Link to="/admin/labs" className="group"><AdminCard icon={<Building2 />} title="المعامل" description="إضافة وإدارة المعامل" /></Link>
+          <Link to="/admin/users" className="group"><AdminCard icon={<Users />} title="المستخدمون" description="حسابات وصلاحيات كل معمل" /></Link>
+          <Link to="/admin/reports" className="group"><AdminCard icon={<FileText />} title="التقارير" description="إحصائيات ومتابعة تقارير الشبكة" /></Link>
+          <Link to="/admin/settings" className="group"><AdminCard icon={<Settings2 />} title="الإعدادات" description="إعدادات النظام المركزية" /></Link>
         </div>
+        <section className="mt-8 grid gap-4 sm:grid-cols-3">
+          <Link to="/admin/labs" className="rounded-xl border border-line bg-elevated p-5 transition hover:-translate-y-0.5 hover:border-teal/40 hover:shadow-sm"><p className="text-xs text-muted">إجراء سريع</p><h3 className="mt-1 font-semibold">➕ إنشاء حساب معمل</h3><p className="mt-1 text-sm text-muted">اسم مستخدم وكلمة مرور ثم يكمل المعمل بياناته.</p></Link>
+          <Link to="/admin/reports" className="rounded-xl border border-line bg-elevated p-5 transition hover:-translate-y-0.5 hover:border-teal/40 hover:shadow-sm"><p className="text-xs text-muted">مراقبة</p><h3 className="mt-1 font-semibold">📊 متابعة أداء الشبكة</h3><p className="mt-1 text-sm text-muted">إجمالي التقارير وحالاتها لكل معمل.</p></Link>
+          <Link to="/admin/users" className="rounded-xl border border-line bg-elevated p-5 transition hover:-translate-y-0.5 hover:border-teal/40 hover:shadow-sm"><p className="text-xs text-muted">صلاحيات</p><h3 className="mt-1 font-semibold">🛡️ مراجعة المستخدمين</h3><p className="mt-1 text-sm text-muted">الأدوار وحالة الحسابات في كل معمل.</p></Link>
+        </section>
         <section className="mt-8 rounded-xl border border-dashed border-line bg-elevated p-6">
-          <h3 className="font-display text-lg font-semibold">الخطوة التالية</h3>
-          <p className="mt-2 text-sm leading-6 text-muted">هنضيف شاشة <strong>إضافة معمل</strong>، ومنها المدير ينشئ اسم المعمل وبيانات دخوله.</p>
-          <Link to="/" className="mt-4 inline-flex text-sm text-teal hover:underline">العودة للنظام</Link>
+          <h3 className="font-display text-lg font-semibold">حالة النسخة</h3>
+          <p className="mt-2 text-sm leading-6 text-muted">النسخة الحالية Multi-Lab V1: عزل بيانات المعامل، حساب مدير مركزي، إنشاء حسابات المعامل، إعداد ملف المعمل، وتقارير وإحصائيات مركزية.</p>
+          <Link to="/admin/labs" className="mt-4 inline-flex text-sm text-teal hover:underline">ابدأ بإضافة أول معمل ←</Link>
         </section>
       </div>
     </main>
@@ -54,5 +59,5 @@ function AdminDashboard() {
 }
 
 function AdminCard({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
-  return <div className="rounded-xl border border-line bg-elevated p-5"><div className="grid size-10 place-items-center rounded-lg bg-teal/10 text-teal">{icon}</div><h3 className="mt-4 font-semibold">{title}</h3><p className="mt-1 text-sm text-muted">{description}</p></div>;
+  return <div className="h-full rounded-xl border border-line bg-elevated p-5 transition group-hover:-translate-y-0.5 group-hover:border-teal/40 group-hover:shadow-sm"><div className="grid size-10 place-items-center rounded-lg bg-teal/10 text-teal">{icon}</div><h3 className="mt-4 font-semibold">{title}</h3><p className="mt-1 text-sm text-muted">{description}</p></div>;
 }

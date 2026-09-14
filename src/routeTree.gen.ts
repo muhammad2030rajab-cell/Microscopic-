@@ -91,6 +91,21 @@ const AdminLabsRoute = AdminLabsRouteImport.update({
   path: '/labs',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
 const LabRoute = LabRouteImport.update({
   id: '/lab',
   path: '/lab',
@@ -115,6 +130,10 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/admin/setup': typeof AdminSetupRoute
   '/admin/labs': typeof AdminLabsRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/patients': typeof PatientsRoute
   '/lab': typeof LabRoute
   '/team': typeof TeamRoute
 }
@@ -130,6 +149,10 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRouteWithChildren
   '/admin/setup': typeof AdminSetupRoute
   '/admin/labs': typeof AdminLabsRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/patients': typeof PatientsRoute
   '/lab': typeof LabRoute
   '/team': typeof TeamRoute
 }
@@ -147,6 +170,10 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/admin/setup': typeof AdminSetupRoute
   '/admin/labs': typeof AdminLabsRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/patients': typeof PatientsRoute
   '/lab': typeof LabRoute
   '/team': typeof TeamRoute
 }
@@ -165,10 +192,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/setup'
     | '/admin/labs'
+    | '/admin/reports'
+    | '/admin/users'
+    | '/admin/settings'
+    | '/patients'
     | '/lab'
     | '/team'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/catalog' | '/new' | '/settings' | '/reports/$id' | '/reports/edit/$id' | '/reports' | '/login' | '/admin' | '/admin/setup' | '/admin/labs'
+  to: '/' | '/catalog' | '/new' | '/settings' | '/reports/$id' | '/reports/edit/$id' | '/reports' | '/login' | '/admin' | '/admin/setup' | '/admin/labs' | '/admin/reports' | '/admin/users' | '/admin/settings' | '/patients'
     | '/lab' | '/team'
   id:
     | '__root__'
@@ -184,6 +215,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/setup'
     | '/admin/labs'
+    | '/admin/reports'
+    | '/admin/users'
+    | '/admin/settings'
+    | '/patients'
     | '/lab'
     | '/team'
   fileRoutesById: FileRoutesById
@@ -198,6 +233,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   LabRoute: typeof LabRouteImport
   TeamRoute: typeof TeamRouteImport
+  PatientsRoute: typeof PatientsRouteImport
 }
 
 declare module '@tanstack/react-router' {
@@ -251,6 +287,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsIdRouteImport
       parentRoute: typeof ReportsRoute
     }
+    '/reports/edit/$id': {
+      id: '/edit/$id'
+      path: '/edit/$id'
+      fullPath: '/reports/edit/$id'
+      preLoaderRoute: typeof ReportsEditIdRouteImport
+      parentRoute: typeof ReportsRoute
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -277,6 +320,27 @@ declare module '@tanstack/react-router' {
       path: '/labs'
       fullPath: '/admin/labs'
       preLoaderRoute: typeof AdminLabsRouteImport
+      parentRoute: typeof AdminRouteImport
+    }
+    '/admin/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRouteImport
+    }
+    '/admin/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRouteImport
+    }
+    '/admin/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRouteImport
     }
     '/lab': {
@@ -306,11 +370,17 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminSetupRoute: typeof AdminSetupRoute
   AdminLabsRoute: typeof AdminLabsRoute
+  AdminReportsRoute: typeof AdminReportsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSetupRoute: AdminSetupRoute,
   AdminLabsRoute: AdminLabsRoute,
+  AdminReportsRoute: AdminReportsRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -318,11 +388,13 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface ReportsRouteChildren {
   ReportsIdRoute: typeof ReportsIdRoute
   ReportsIndexRoute: typeof ReportsIndexRoute
+  ReportsEditIdRoute: typeof ReportsEditIdRoute
 }
 
 const ReportsRouteChildren: ReportsRouteChildren = {
   ReportsIdRoute: ReportsIdRoute,
   ReportsIndexRoute: ReportsIndexRoute,
+  ReportsEditIdRoute: ReportsEditIdRoute,
 }
 
 const ReportsRouteWithChildren =

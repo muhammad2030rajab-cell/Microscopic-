@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <p className="mt-auto pt-6 text-[11px] leading-relaxed text-muted">
-            نتائج مخزّنة على هذا الجهاز فقط. ليست بديلاً عن الرأي الطبي.
+            بيانات المعمل وتقاريره محفوظة على النظام بشكل مستقل. ليست بديلاً عن الرأي الطبي.
           </p>
         </aside>
 

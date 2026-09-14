@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { Search, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +7,20 @@ import { listLabCatalog, updateLabCatalogItem, type LabCatalogRow } from "@/lib/
 import { getCurrentLab } from "@/lib/lab-access";
 
 export const Route = createFileRoute("/catalog")({
-  loader: async () => Promise.all([getCurrentLab(), listLabCatalog()]).then(([lab, items]) => ({ lab, items })),
+  loader: async () => {
+    try {
+      const [lab, items] = await Promise.all([getCurrentLab(), listLabCatalog()]);
+      return { lab, items };
+    } catch {
+      return { lab: null, items: [] };
+    }
+  },
   component: CatalogPage,
 });
+
+function NavigateToLogin() {
+  return <Navigate to="/login" replace />;
+}
 
 function CatalogPage() {
   const { lab, items: initialItems } = Route.useLoaderData();
@@ -23,6 +34,8 @@ function CatalogPage() {
     (cat === "all" || x.category_id === cat) &&
     (!q.trim() || `${x.test_name} ${x.category_name_ar} ${x.category_name_en}`.toLowerCase().includes(q.trim().toLowerCase()))
   ), [items, q, cat]);
+
+  if (!lab) return <NavigateToLogin />;
 
   async function save(item: LabCatalogRow) {
     setSaving(item.id);

@@ -4,7 +4,14 @@ import { UserButton, useCurrentUserState } from "@/lib/auth/gates";
 import { getCurrentLab, getLabDashboardStats } from "@/lib/lab-access";
 
 export const Route = createFileRoute("/lab")({
-  loader: async () => Promise.all([getCurrentLab(), getLabDashboardStats()]).then(([lab, stats]) => ({ lab, stats })),
+  loader: async () => {
+    try {
+      const [lab, stats] = await Promise.all([getCurrentLab(), getLabDashboardStats()]);
+      return { lab, stats };
+    } catch {
+      return { lab: null, stats: { patients: 0, reportsToday: 0, pendingReview: 0, approved: 0, critical: 0 } };
+    }
+  },
   component: LabDashboard,
 });
 
@@ -13,7 +20,7 @@ function LabDashboard() {
   const { lab, stats } = Route.useLoaderData();
 
   if (isPending) return <main className="grid min-h-screen place-items-center bg-paper">جارٍ التحقق…</main>;
-  if (!user) return <Navigate to="/login" />;
+  if (!user || !lab) return <Navigate to="/login" replace />;
   if (!lab.is_profile_complete) return <Navigate to="/lab/setup" />;
 
   return (
