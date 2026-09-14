@@ -7,7 +7,14 @@ import { Label } from "@/components/ui/label";
 import { isPlatformAdmin, createLab, listAdminLabs, type AdminLab } from "@/lib/platform-admin";
 
 export const Route = createFileRoute("/admin/labs")({
-  loader: async () => ({ isAdmin: await isPlatformAdmin(), labs: await listAdminLabs() }),
+  loader: async () => {
+    try {
+      const [isAdmin, labs] = await Promise.all([isPlatformAdmin(), listAdminLabs()]);
+      return { isAdmin, labs };
+    } catch {
+      return { isAdmin: false, labs: [] as AdminLab[] };
+    }
+  },
   component: AdminLabs,
 });
 

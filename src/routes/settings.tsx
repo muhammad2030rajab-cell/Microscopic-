@@ -6,12 +6,26 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getCurrentLab, updateCurrentLabProfile } from "@/lib/lab-access";
+import { getCurrentLab, updateCurrentLabProfile, type LabProfileData } from "@/lib/lab-access";
 
-export const Route = createFileRoute("/settings")({ loader: () => getCurrentLab(), component: SettingsPage });
+export const Route = createFileRoute("/settings")({
+  loader: async () => {
+    try {
+      return { lab: await getCurrentLab() };
+    } catch {
+      return { lab: null as LabProfileData | null };
+    }
+  },
+  component: SettingsPage,
+});
 
 function SettingsPage() {
-  const lab = Route.useLoaderData();
+  const { lab } = Route.useLoaderData();
+  if (!lab) return <Navigate to="/login" replace />;
+  return <SettingsForm lab={lab} />;
+}
+
+function SettingsForm({ lab }: { lab: LabProfileData }) {
   const [name, setName] = useState(lab.lab_name);
   const [nameEn, setNameEn] = useState(lab.lab_name_en ?? "");
   const [phone, setPhone] = useState(lab.phone ?? "");

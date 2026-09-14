@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { FlagDot } from "@/components/report/flag-badge";
 import { Input } from "@/components/ui/input";
@@ -9,25 +9,48 @@ import { listLabReports } from "@/lib/lab-reports";
 import { formatArDate } from "@/lib/utils";
 import { reportStatusClasses, reportStatusLabels } from "@/lib/report-workflow";
 
-export const Route = createFileRoute("/reports/")({ loader: () => listLabReports(), component: ReportsPage });
+type LabReportSummary = Awaited<ReturnType<typeof listLabReports>>[number];
+
+export const Route = createFileRoute("/reports/")({
+  loader: async () => {
+    try {
+      return { reports: await listLabReports() };
+    } catch {
+      return { reports: null as LabReportSummary[] | null };
+    }
+  },
+  component: ReportsPage,
+});
 
 function ReportsPage() {
-  const reports = Route.useLoaderData();
+  const { reports } = Route.useLoaderData();
+  if (!reports) return <Navigate to="/login" replace />;
+  return <ReportsList reports={reports} />;
+}
+
+function ReportsList({ reports }: { reports: LabReportSummary[] }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | "draft" | "pending_review" | "approved" | "cancelled">("all");
+  const [period, setPeriod] = useState<"all" | "month" | "year">("all");
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
+    const now = new Date();
     return reports.filter((r) => {
       const matchesStatus = status === "all" || r.status === status;
       const matchesText = !t || [r.patientName, r.doctor, r.id, r.patientCode, r.sampleId].some((v) => v.toLowerCase().includes(t));
-      return matchesStatus && matchesText;
+      const created = new Date(r.createdAt);
+      const matchesPeriod =
+        period === "all" ||
+        (period === "year" && created.getFullYear() === now.getFullYear()) ||
+        (period === "month" && created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth());
+      return matchesStatus && matchesText && matchesPeriod;
     });
-  }, [q, reports, status]);
+  }, [q, reports, status, period]);
 
   return (
     <AppShell>
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-muted">الأرشيف</p>
           <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">التقارير</h1>
@@ -38,7 +61,7 @@ function ReportsPage() {
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="بحث بالاسم أو الكود أو العينة"
+              placeholder="بحث باسم المريض أو الكود أو العينة"
               className="ps-9"
             />
           </div>
@@ -55,9 +78,15 @@ function ReportsPage() {
         </div>
       </header>
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        <PeriodChip active={period === "year"} onClick={() => setPeriod(period === "year" ? "all" : "year")}>هذا العام</PeriodChip>
+        <PeriodChip active={period === "month"} onClick={() => setPeriod(period === "month" ? "all" : "month")}>هذا الشهر</PeriodChip>
+        <PeriodChip active={period === "all"} onClick={() => setPeriod("all")}>الكل</PeriodChip>
+      </div>
+
       <div className="mb-3 flex items-center justify-between text-xs text-muted">
         <span>عرض {filtered.length} من {reports.length} تقرير</span>
-        {(q || status !== "all") ? <button type="button" onClick={() => { setQ(""); setStatus("all"); }} className="font-medium text-teal hover:underline">مسح الفلاتر</button> : null}
+        {(q || status !== "all" || period !== "all") ? <button type="button" onClick={() => { setQ(""); setStatus("all"); setPeriod("all"); }} className="font-medium text-teal hover:underline">مسح الفلاتر</button> : null}
       </div>
 
       {filtered.length === 0 ? (
@@ -100,5 +129,19 @@ function ReportsPage() {
         </ul>
       )}
     </AppShell>
+  );
+}
+
+function PeriodChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-9 rounded-full px-4 text-sm font-medium transition ${
+        active ? "bg-teal text-teal-fg" : "border border-line bg-elevated text-ink-soft hover:border-teal/40"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

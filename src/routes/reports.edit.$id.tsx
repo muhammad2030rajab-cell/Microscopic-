@@ -1,21 +1,26 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/app-shell";
 import { ReportWizard } from "@/components/report/wizard";
-import { getCurrentLab } from "@/lib/lab-access";
+import { getCurrentLab, type LabProfileData } from "@/lib/lab-access";
 import { getLabReport } from "@/lib/lab-reports";
-import { listLabCatalog } from "@/lib/lab-catalog";
+import { listLabCatalog, type LabCatalogRow } from "@/lib/lab-catalog";
 import type { Draft } from "@/lib/store";
 
 export const Route = createFileRoute("/reports/edit/$id")({
   loader: async ({ params }) => {
-    const [lab, report, catalog] = await Promise.all([getCurrentLab(), getLabReport({ data: { id: params.id } }), listLabCatalog()]);
-    return { lab, report, catalog };
+    try {
+      const [lab, report, catalog] = await Promise.all([getCurrentLab(), getLabReport({ data: { id: params.id } }), listLabCatalog()]);
+      return { lab, report, catalog };
+    } catch {
+      return { lab: null as LabProfileData | null, report: null, catalog: [] as LabCatalogRow[] };
+    }
   },
   component: EditReportPage,
 });
 
 function EditReportPage() {
   const { lab, report, catalog } = Route.useLoaderData();
+  if (!lab) return <Navigate to="/login" replace />;
   if (lab.role === "viewer" || !report || report.status !== "draft") return <Navigate to={report ? "/reports/$id" : "/reports"} params={report ? { id: report.id } : undefined} />;
   const draft: Draft = {
     patientName: report.patientName, patientCode: report.patientCode, age: String(report.age), gender: report.gender,

@@ -1,16 +1,23 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, CheckCircle2, ClipboardCheck, Pencil, Printer, Send } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { ArrowRight, CheckCircle2, ClipboardCheck, FileDown, Mail, MessageCircle, Pencil, Printer, Send } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { PrintView } from "@/components/report/print-view";
 import { Button } from "@/components/ui/button";
 import { interpretResult, isCritical } from "@/lib/medical";
 import { approveLabReport, getLabReport, submitLabReportForReview } from "@/lib/lab-reports";
-import { getCurrentLab } from "@/lib/lab-access";
+import { getCurrentLab, type LabProfileData } from "@/lib/lab-access";
 import { reportStatusClasses, reportStatusLabels } from "@/lib/report-workflow";
 
 export const Route = createFileRoute("/reports/$id")({
-  loader: async ({ params }) => ({ report: await getLabReport({ data: { id: params.id } }), lab: await getCurrentLab() }),
+  loader: async ({ params }) => {
+    try {
+      const [report, lab] = await Promise.all([getLabReport({ data: { id: params.id } }), getCurrentLab()]);
+      return { report, lab };
+    } catch {
+      return { report: null, lab: null as LabProfileData | null };
+    }
+  },
   component: ReportDetail,
 });
 
@@ -21,6 +28,7 @@ function ReportDetail() {
   const [loading, setLoading] = useState<"submit" | "approve" | null>(null);
   const [error, setError] = useState("");
 
+  if (!lab) return <Navigate to="/login" replace />;
   if (!report) return <AppShell><div className="mx-auto max-w-lg py-16 text-center"><h1 className="font-display text-2xl font-semibold">التقرير غير موجود</h1><Link to="/reports" className="mt-6 inline-flex text-sm text-teal hover:underline">العودة للأرشيف</Link></div></AppShell>;
 
   const notes = report.tests.map((t) => ({ t, f: interpretResult(t.name, t.value, report.gender, t.customRange) })).filter(({ f }) => f.flag !== "normal" && f.flag !== "unknown");
@@ -58,6 +66,29 @@ function ReportDetail() {
   const canSubmit = ["owner", "technician", "reviewer"].includes(lab.role) && report.status === "draft";
   const canApprove = ["owner", "reviewer"].includes(lab.role) && ["draft", "pending_review"].includes(report.status);
 
+  function shareSummaryText() {
+    const lines = [
+      `تقرير تحليل — ${labProfile.name}`,
+      `المريض: ${report.patientName} (${report.age} ${report.gender})`,
+      report.doctor ? `الطبيب المحيل: ${report.doctor}` : null,
+      "",
+      ...report.tests.map((t) => `${t.name}: ${t.value} ${t.unit}`),
+      critical.length ? `\n⚠️ قيم حرجة: ${critical.map((t) => `${t.name} (${t.value})`).join("، ")}` : null,
+    ].filter(Boolean);
+    return lines.join("\n");
+  }
+
+  function shareOnWhatsapp() {
+    const text = encodeURIComponent(shareSummaryText());
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  }
+
+  function shareByEmail() {
+    const subject = encodeURIComponent(`تقرير تحليل — ${report.patientName}`);
+    const body = encodeURIComponent(shareSummaryText());
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  }
+
   return <div className="print-root min-h-dvh bg-paper">
     <div className="no-print">
       <AppShell>
@@ -67,7 +98,6 @@ function ReportDetail() {
             {report.status === "draft" ? <Button variant="secondary" asChild><Link to="/reports/edit/$id" params={{ id: report.id }}><Pencil className="size-4" />تعديل المسودة</Link></Button> : null}
             {canSubmit ? <Button variant="secondary" onClick={submitForReview} disabled={loading !== null}><Send className="size-4" />{loading === "submit" ? "جارٍ الإرسال…" : "إرسال للمراجعة"}</Button> : null}
             {canApprove ? <Button onClick={approve} disabled={loading !== null}><ClipboardCheck className="size-4" />{loading === "approve" ? "جارٍ الاعتماد…" : "اعتماد التقرير"}</Button> : null}
-            <Button variant="secondary" onClick={() => window.print()}><Printer className="size-4" />طباعة / حفظ PDF</Button>
           </div>
         </div>
 
@@ -77,6 +107,17 @@ function ReportDetail() {
           {report.status === "approved" ? <p className="inline-flex items-center gap-1.5 text-sm text-ok"><CheckCircle2 className="size-4" />التقرير معتمد وجاهز كنسخة نهائية.</p> : null}
           {report.status === "draft" ? <p className="text-sm text-muted">يمكن تعديل مسار التقرير ثم إرساله للمراجعة.</p> : null}
         </div>
+
+        <div className="mx-auto mb-5 max-w-[820px] rounded-lg border border-line bg-elevated p-4">
+          <p className="mb-3 text-sm font-medium">مشاركة التقرير</p>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <ShareAction icon={<FileDown className="size-5" />} label="حفظ PDF" color="bg-red-500/10 text-red-600" onClick={() => window.print()} />
+            <ShareAction icon={<MessageCircle className="size-5" />} label="واتساب" color="bg-emerald-500/10 text-emerald-600" onClick={shareOnWhatsapp} />
+            <ShareAction icon={<Mail className="size-5" />} label="بريد إلكتروني" color="bg-teal/10 text-teal" onClick={shareByEmail} />
+            <ShareAction icon={<Printer className="size-5" />} label="طباعة" color="bg-slate-500/10 text-slate-600" onClick={() => window.print()} />
+          </div>
+          <p className="mt-3 text-xs leading-5 text-muted">مشاركة واتساب والبريد بترسل ملخص نتائج التقرير كنص. لإرسال التقرير بشكله الكامل (PDF)، استخدم زر "حفظ PDF" ثم أرفق الملف يدويًا.</p>
+        </div>
         {error ? <div className="mx-auto mb-5 max-w-[820px] rounded-lg border border-high/20 bg-high/5 p-4 text-sm text-high">{error}</div> : null}
 
         {(critical.length || notes.length) ? <aside className="mx-auto mb-6 w-full max-w-[820px] rounded-lg border border-line bg-elevated p-4"><h2 className="text-sm font-medium">ملخص طبي</h2>{critical.length > 0 && <p className="mt-2 text-sm text-high">قيم حرجة: {critical.map((t) => `${t.name} (${t.value})`).join("، ")}</p>}<ul className="mt-2 space-y-1.5 text-sm text-ink-soft">{notes.slice(0, 6).map(({ f, t }) => <li key={`${t.categoryId}-${t.name}`}><span className="font-medium text-ink">{t.name}:</span> {f.note}</li>)}</ul></aside> : null}
@@ -85,4 +126,27 @@ function ReportDetail() {
     </div>
     <div className="hidden print:block"><PrintView report={report} lab={labProfile} /></div>
   </div>;
+}
+
+function ShareAction({
+  icon,
+  label,
+  color,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  color: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-center gap-2 rounded-lg border border-line bg-elevated p-3 text-center transition hover:-translate-y-0.5 hover:shadow-sm"
+    >
+      <span className={`grid size-10 place-items-center rounded-full ${color}`}>{icon}</span>
+      <span className="text-xs font-medium">{label}</span>
+    </button>
+  );
 }

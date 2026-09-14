@@ -16,7 +16,17 @@ const listAdminUsers = createServerFn({ method: "GET" }).middleware([authMiddlew
   `;
 });
 
-export const Route = createFileRoute("/admin/users")({ loader: async () => ({ isAdmin: await isPlatformAdmin(), users: await listAdminUsers() }), component: AdminUsers });
+export const Route = createFileRoute("/admin/users")({
+  loader: async () => {
+    try {
+      const [isAdmin, users] = await Promise.all([isPlatformAdmin(), listAdminUsers()]);
+      return { isAdmin, users };
+    } catch {
+      return { isAdmin: false, users: [] as { username: string; role: string; lab_name: string; is_active: boolean }[] };
+    }
+  },
+  component: AdminUsers,
+});
 
 function AdminUsers() {
   const { isAdmin, users } = Route.useLoaderData();

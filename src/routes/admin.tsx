@@ -5,10 +5,15 @@ import { UserButton } from "@/lib/auth/gates";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 
 export const Route = createFileRoute("/admin")({
-  loader: async ({ location }) => ({
+  loader: async ({ location }) => {
     // Keep first-admin bootstrap accessible before any platform admin exists.
-    isAdmin: location.pathname === "/admin/setup" ? false : await isPlatformAdmin(),
-  }),
+    if (location.pathname === "/admin/setup") return { isAdmin: false };
+    try {
+      return { isAdmin: await isPlatformAdmin() };
+    } catch {
+      return { isAdmin: false };
+    }
+  },
   component: AdminRoute,
 });
 

@@ -33,8 +33,17 @@ const getAdminReportStats = createServerFn({ method: "GET" })
     return { totals: totals[0] ?? { total: 0, draft: 0, pending: 0, approved: 0, cancelled: 0 }, labs };
   });
 
+const EMPTY_STATS = { totals: { total: 0, draft: 0, pending: 0, approved: 0, cancelled: 0 }, labs: [] as { id: string; name: string; reports: number; approved: number; pending: number }[] };
+
 export const Route = createFileRoute("/admin/reports")({
-  loader: async () => ({ isAdmin: await isPlatformAdmin(), stats: await getAdminReportStats() }),
+  loader: async () => {
+    try {
+      const [isAdmin, stats] = await Promise.all([isPlatformAdmin(), getAdminReportStats()]);
+      return { isAdmin, stats };
+    } catch {
+      return { isAdmin: false, stats: EMPTY_STATS };
+    }
+  },
   component: AdminReports,
 });
 

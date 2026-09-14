@@ -4,11 +4,18 @@ import { ArrowRight, CheckCircle2, UserPlus, Users, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getCurrentLab } from "@/lib/lab-access";
+import { getCurrentLab, type LabProfileData } from "@/lib/lab-access";
 import { createLabStaff, listLabStaff, updateLabStaff, type LabRole, type LabStaff } from "@/lib/lab-users";
 
 export const Route = createFileRoute("/team")({
-  loader: async () => ({ lab: await getCurrentLab(), staff: await listLabStaff() }),
+  loader: async () => {
+    try {
+      const [lab, staff] = await Promise.all([getCurrentLab(), listLabStaff()]);
+      return { lab, staff };
+    } catch {
+      return { lab: null as LabProfileData | null, staff: [] as LabStaff[] };
+    }
+  },
   component: TeamPage,
 });
 
@@ -31,6 +38,7 @@ function TeamPage() {
 
   useEffect(() => setStaff(initialStaff), [initialStaff]);
 
+  if (!lab) return <Navigate to="/login" replace />;
   if (lab.role !== "owner") return <Navigate to="/lab" />;
 
   async function submit(event: FormEvent<HTMLFormElement>) {

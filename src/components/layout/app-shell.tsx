@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { useLabStore } from "@/lib/store";
 
 const NAV = [
-  { to: "/", label: "الرئيسية", icon: LayoutDashboard },
+  { to: "/lab", label: "الرئيسية", icon: LayoutDashboard },
   { to: "/new", label: "تقرير جديد", icon: FilePlus2 },
   { to: "/reports", label: "التقارير", icon: Files },
   { to: "/catalog", label: "دليل التحاليل", icon: BookOpen },

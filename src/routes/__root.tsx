@@ -12,7 +12,7 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: APP_NAME },
-      { name: "theme-color", content: "#152428" },
+      { name: "theme-color", content: "#0f2942" },
       {
         name: "description",
         content: "مختبر رجب — نظام إصدار تقارير التحاليل الطبية",

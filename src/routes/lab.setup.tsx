@@ -1,15 +1,29 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { Building2, Phone, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getCurrentLab, updateCurrentLabProfile } from "@/lib/lab-access";
+import { getCurrentLab, updateCurrentLabProfile, type LabProfileData } from "@/lib/lab-access";
 
-export const Route = createFileRoute("/lab/setup")({ loader: () => getCurrentLab(), component: LabSetupPage });
+export const Route = createFileRoute("/lab/setup")({
+  loader: async () => {
+    try {
+      return { lab: await getCurrentLab() };
+    } catch {
+      return { lab: null as LabProfileData | null };
+    }
+  },
+  component: LabSetupPage,
+});
 
 function LabSetupPage() {
-  const lab = Route.useLoaderData();
+  const { lab } = Route.useLoaderData();
+  if (!lab) return <Navigate to="/login" replace />;
+  return <LabSetupForm lab={lab} />;
+}
+
+function LabSetupForm({ lab }: { lab: LabProfileData }) {
   const navigate = useNavigate();
   const [name, setName] = useState(lab.lab_name === "معمل جديد" ? "" : lab.lab_name);
   const [nameEn, setNameEn] = useState(lab.lab_name_en ?? "");

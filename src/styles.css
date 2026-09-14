@@ -6,25 +6,25 @@
   --font-display: "Source Serif 4", "Noto Naskh Arabic", ui-serif, Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  --color-paper: #f3eee4;
-  --color-paper-2: #e8e1d3;
-  --color-ink: #152428;
-  --color-ink-soft: #3d4c50;
-  --color-muted: #6a7477;
-  --color-line: #d4cdbf;
-  --color-line-strong: #b7b09f;
-  --color-teal: #1b6b66;
-  --color-teal-deep: #134f4c;
-  --color-teal-fg: #f3eee4;
-  --color-ok: #2c6a4c;
-  --color-ok-bg: #e4efe6;
-  --color-high: #9b2c2c;
-  --color-high-bg: #f4e4e1;
-  --color-low: #8a5410;
-  --color-low-bg: #f3ead8;
-  --color-surface: #fbf8f2;
-  --color-elevated: #fffcf7;
-  --color-ring: #1b6b66;
+  --color-paper: #f4f6fb;
+  --color-paper-2: #e8edf5;
+  --color-ink: #0f2942;
+  --color-ink-soft: #3a4b5e;
+  --color-muted: #6b7684;
+  --color-line: #dde3ec;
+  --color-line-strong: #c1cad9;
+  --color-teal: #2f6fed;
+  --color-teal-deep: #1d4fb8;
+  --color-teal-fg: #ffffff;
+  --color-ok: #1f9d55;
+  --color-ok-bg: #e5f7ec;
+  --color-high: #d92d20;
+  --color-high-bg: #fdeceb;
+  --color-low: #b25e09;
+  --color-low-bg: #fdf1e3;
+  --color-surface: #ffffff;
+  --color-elevated: #ffffff;
+  --color-ring: #2f6fed;
   --color-flag-yellow: #f3d66a;
 
   --radius-xs: 4px;
@@ -46,7 +46,7 @@
 
   body {
     background:
-      radial-gradient(1200px 500px at 100% -10%, rgb(27 107 102 / 0.07), transparent 55%),
+      radial-gradient(1200px 500px at 100% -10%, rgb(47 111 237 / 0.08), transparent 55%),
       var(--color-paper);
     min-height: 100dvh;
     font-family: var(--font-sans);

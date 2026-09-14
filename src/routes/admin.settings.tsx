@@ -2,7 +2,16 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { ArrowRight, Database, LockKeyhole, Settings2 } from "lucide-react";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 
-export const Route = createFileRoute("/admin/settings")({ loader: async () => ({ isAdmin: await isPlatformAdmin() }), component: AdminSettings });
+export const Route = createFileRoute("/admin/settings")({
+  loader: async () => {
+    try {
+      return { isAdmin: await isPlatformAdmin() };
+    } catch {
+      return { isAdmin: false };
+    }
+  },
+  component: AdminSettings,
+});
 
 function AdminSettings() {
   const { isAdmin } = Route.useLoaderData();
