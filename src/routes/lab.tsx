@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Navigate, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { FileText, FlaskConical, Microscope, Settings2, UserRoundSearch, ClipboardList } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
@@ -18,6 +18,10 @@ export const Route = createFileRoute("/lab")({
 });
 
 function LabDashboard() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (pathname !== "/lab") return <Outlet />;
+
   const { user, isPending } = useCurrentUserState();
   const { lab, stats } = Route.useLoaderData();
 
