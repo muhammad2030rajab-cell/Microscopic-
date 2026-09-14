@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 1200px; height: 630px; overflow: hidden; background: #F3EEE4; }
+    body {
+      font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", sans-serif;
+      color: #152428;
+      background:
+        linear-gradient(180deg, #F7F3EA 0%, #F3EEE4 55%, #EBE4D6 100%);
+    }
+    .bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 18px;
+      background: #1B6B66;
+    }
+    .mark {
+      position: absolute;
+      top: 48px;
+      left: 64px;
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      background: #1B6B66;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mark svg { width: 30px; height: 30px; }
+    .kicker {
+      position: absolute;
+      top: 56px;
+      left: 136px;
+      font-size: 13px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #1B6B66;
+      font-weight: 500;
+    }
+    .title {
+      position: absolute;
+      top: 168px;
+      left: 64px;
+      width: 520px;
+      font-family: "Source Serif 4", Georgia, serif;
+      font-weight: 600;
+      font-size: 118px;
+      line-height: 0.88;
+      letter-spacing: -0.03em;
+      color: #152428;
+    }
+    .sub {
+      position: absolute;
+      top: 292px;
+      left: 68px;
+      font-size: 18px;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      color: #3D4C50;
+      font-weight: 500;
+    }
+    .ar {
+      position: absolute;
+      top: 338px;
+      left: 68px;
+      width: 500px;
+      font-size: 22px;
+      font-weight: 500;
+      color: #1B6B66;
+      direction: rtl;
+      text-align: left;
+    }
+    .tag {
+      position: absolute;
+      top: 520px;
+      left: 68px;
+      font-size: 15px;
+      color: #6A7477;
+      letter-spacing: 0.04em;
+    }
+    .sheet {
+      position: absolute;
+      top: 72px;
+      right: 56px;
+      width: 470px;
+      height: 486px;
+      background: #FFFCFl7;
+      background: #FFFCFl7;
+      background: #FFFCF6;
+      border: 1px solid #D4CDBF;
+      box-shadow: 0 28px 60px -32px rgba(21, 36, 40, 0.38);
+      padding: 28px 26px 22px;
+    }
+    .sheet h2 {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 20px;
+      font-weight: 600;
+      font-style: italic;
+      text-align: center;
+      color: #152428;
+      border-bottom: 1.5px solid #152428;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #6A7477;
+      font-weight: 500;
+      padding: 0 6px 8px;
+      border-bottom: 1px solid #D4CDBF;
+    }
+    tbody td {
+      padding: 11px 6px;
+      border-bottom: 1px solid #E6DFD2;
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    .name { font-weight: 500; }
+    .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+    .unit { color: #6A7477; font-size: 12px; }
+    .ref { color: #3D4C50; font-size: 12px; }
+    .flag {
+      display: inline-block;
+      min-width: 18px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .h { color: #9B2C2C; }
+    .l { color: #8A5410; }
+    .ok { color: #2C6A4C; }
+    .hi { background: #F4E4E1; }
+    .lo { background: #F3EAD8; }
+  </style>
+</head>
+<body>
+  <div class="bar"></div>
+  <div class="mark" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#F3EEE4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 2h4v6.2L19.4 18A5 5 0 0 1 15 22H9a5 5 0 0 1-4.4-4L10 8.2V2z"/>
+      <path d="M8.2 14h7.6"/>
+    </svg>
+  </div>
+  <p class="kicker">Clinical laboratory</p>
+  <h1 class="title">RAJAB</h1>
+  <p class="sub">Diagnostics</p>
+  <p class="ar">مختبر رجب للتحاليل الطبية</p>
+  <p class="tag">Biochemistry reports · Print-ready · RTL</p>
+  <aside class="sheet">
+    <h2>Clinical Chemistry Unit</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Test</th>
+          <th>Result</th>
+          <th></th>
+          <th>Reference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="hi">
+          <td class="name">Fasting Glucose</td>
+          <td class="num h">150</td>
+          <td class="flag h">H</td>
+          <td class="ref">70 – 100</td>
+        </tr>
+        <tr class="lo">
+          <td class="name">Hemoglobin</td>
+          <td class="num l">6.1</td>
+          <td class="flag l">L</td>
+          <td class="ref">12.0 – 15.5</td>
+        </tr>
+        <tr>
+          <td class="name">ALT (SGPT)</td>
+          <td class="num ok">25</td>
+          <td class="flag ok"></td>
+          <td class="ref">Up to 35</td>
+        </tr>
+        <tr>
+          <td class="name">AST (SGOT)</td>
+          <td class="num ok">22</td>
+          <td class="flag ok"></td>
+          <td class="ref">Up to 35</td>
+        </tr>
+        <tr>
+          <td class="name">Creatinine</td>
+          <td class="num ok">0.9</td>
+          <td class="flag ok"></td>
+          <td class="ref">0.6 – 1.1</td>
+        </tr>
+      </tbody>
+    </table>
+  </aside>
+</body>
+</html>
