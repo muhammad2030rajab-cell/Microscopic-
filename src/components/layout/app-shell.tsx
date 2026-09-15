@@ -76,14 +76,28 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const lab = useLabStore((s) => s.lab);
 
+  // حماية من انهيار التطبيق إذا كانت بيانات المعمل
+  // لم تصل من الـ Store بعد.
+  const labName =
+    lab?.name?.trim() || "Microscopic System";
+
+  const labNameEn =
+    lab?.nameEn?.trim() || "Microscopic";
+
+  const doctorName =
+    lab?.doctorName?.trim() || "";
+
+  const doctorSpecialty =
+    lab?.doctorSpecialty?.trim() || "";
+
   return (
     <div className="min-h-dvh bg-paper text-ink">
       <div className="mx-auto flex min-h-dvh max-w-[1400px]">
         {/* Desktop Sidebar */}
         <aside className="no-print sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-e border-line bg-surface/70 px-4 py-6 lg:flex">
           <Brand
-            name={lab.name}
-            nameEn={lab.nameEn}
+            name={labName}
+            nameEn={labNameEn}
           />
 
           <nav className="mt-8 flex flex-1 flex-col gap-1">
@@ -109,13 +123,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="lg:hidden">
               <Brand
                 compact
-                name={lab.name}
-                nameEn={lab.nameEn}
+                name={labName}
+                nameEn={labNameEn}
               />
             </div>
 
             <p className="hidden text-xs text-muted lg:block">
-              {lab.doctorName} · {lab.doctorSpecialty}
+              {doctorName && doctorSpecialty
+                ? `${doctorName} · ${doctorSpecialty}`
+                : doctorName || doctorSpecialty || ""}
             </p>
 
             <Link
