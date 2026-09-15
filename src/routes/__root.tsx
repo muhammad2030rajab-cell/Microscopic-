@@ -53,6 +53,11 @@ export const Route = createRootRoute({
       },
 
       {
+        rel: "manifest",
+        href: "/manifest.webmanifest",
+      },
+
+      {
         rel: "stylesheet",
         href: appCss,
       },
