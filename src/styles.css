@@ -372,23 +372,16 @@
    ABNORMAL RESULT
    ========================================= */
 
-/* النتيجة غير الطبيعية: خلفية حمراء + كتابة سوداء */
 .lab-abnormal-result {
   display: inline-block !important;
   min-width: 42px !important;
   padding: 3px 8px !important;
   border-radius: 5px !important;
-
-  background-color: #ef4444 !important;
-  color: #000000 !important;
-
-  font-weight: 900 !important;
+  background-color: #fecaca !important;
+  color: #991b1b !important;
+  font-weight: 800 !important;
   text-align: center !important;
-  line-height: 1.15 !important;
-
-  box-shadow:
-    inset 0 0 0 1px #b91c1c !important,
-    0 1px 2px rgba(127, 29, 29, 0.18) !important;
+  box-shadow: inset 0 0 0 1px #ef4444 !important;
 }
 
 /* =========================================
@@ -445,10 +438,8 @@
 @media print {
   .lab-abnormal-result {
     display: inline-block !important;
-    background-color: #ef4444 !important;
-    color: #000000 !important;
-    font-weight: 900 !important;
-
+    background-color: #fecaca !important;
+    color: #991b1b !important;
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
   }
