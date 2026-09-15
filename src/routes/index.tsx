@@ -238,6 +238,10 @@ function WelcomePage() {
             أخصائي التحاليل الطبية
           </p>
 
+          <p className="mt-3 text-sm font-semibold text-slate-500">
+            لولا المختبر، ما اكتمل التشخيص. 🔬
+          </p>
+
           <p className="mt-3 text-[9px] font-medium uppercase tracking-[0.25em] text-slate-300">
             Microscopic System
           </p>
