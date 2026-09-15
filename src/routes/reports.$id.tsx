@@ -8,9 +8,9 @@ import { interpretResult, isCritical } from "@/lib/medical";
 import { approveLabReport, getLabReport, submitLabReportForReview } from "@/lib/lab-reports";
 import {
   getCurrentLab,
-  getCurrentLabPermissions,
   type LabProfileData,
 } from "@/lib/lab-access";
+import { getCurrentLabPermissions } from "@/lib/lab-users";
 import { reportStatusClasses, reportStatusLabels } from "@/lib/report-workflow";
 
 export const Route = createFileRoute("/reports/$id")({
