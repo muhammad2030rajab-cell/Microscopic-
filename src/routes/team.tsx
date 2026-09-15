@@ -103,6 +103,7 @@ const permissionLabels: Record<
   "reports.view": "مشاهدة التقارير",
   "reports.create": "إنشاء تقرير",
   "reports.edit": "تعديل التقرير",
+  "reports.approve": "اعتماد التقرير",
   "reports.delete": "حذف التقرير",
   "reports.print": "طباعة التقارير",
   "reports.export": "تصدير التقارير",
@@ -121,6 +122,7 @@ const reportPermissions: LabPermission[] = [
   "reports.view",
   "reports.create",
   "reports.edit",
+  "reports.approve",
   "reports.delete",
   "reports.print",
   "reports.export",
@@ -155,6 +157,8 @@ function TeamPage() {
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] =
     useState<string | null>(null);
+
+  const [editingName, setEditingName] = useState("");
 
   const [editingPermissions, setEditingPermissions] =
     useState<LabPermissions>({});
@@ -288,6 +292,8 @@ function TeamPage() {
 
     setEditingId(member.id);
 
+    setEditingName(member.name || "");
+
     setEditingRole(
       member.role === "owner"
         ? "supervisor"
@@ -301,6 +307,7 @@ function TeamPage() {
 
   function cancelEditing() {
     setEditingId(null);
+    setEditingName("");
     setEditingPermissions({});
   }
 
@@ -315,6 +322,7 @@ function TeamPage() {
       await updateLabStaff({
         data: {
           id: member.id,
+          name: editingName,
           role: editingRole,
           permissions: editingPermissions,
         },
@@ -325,6 +333,7 @@ function TeamPage() {
           item.id === member.id
             ? {
                 ...item,
+                name: editingName.trim(),
                 role: editingRole,
                 permissions:
                   editingPermissions,
@@ -334,6 +343,7 @@ function TeamPage() {
       );
 
       setEditingId(null);
+      setEditingName("");
       setEditingPermissions({});
 
       setSuccess(
@@ -613,6 +623,18 @@ function TeamPage() {
                       {isEditing ? (
                         <div className="border-t border-line pt-4">
                           <div className="space-y-4">
+                            <div className="space-y-1.5">
+                              <Label>اسم الموظف</Label>
+                              <Input
+                                value={editingName}
+                                onChange={(event) =>
+                                  setEditingName(event.target.value)
+                                }
+                                maxLength={120}
+                                placeholder="اسم الموظف"
+                              />
+                            </div>
+
                             <div className="space-y-1.5">
                               <Label>
                                 نوع المستخدم

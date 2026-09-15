@@ -43,6 +43,10 @@ const permissionLabels: Record<
     ar: "تعديل التقارير",
     description: "يمكنه تعديل التقارير",
   },
+  "reports.approve": {
+    ar: "اعتماد التقارير",
+    description: "يمكنه مراجعة واعتماد التقارير",
+  },
   "reports.delete": {
     ar: "حذف التقارير",
     description: "يمكنه حذف التقارير",
@@ -78,6 +82,7 @@ const permissionGroups = [
       "reports.view",
       "reports.create",
       "reports.edit",
+      "reports.approve",
       "reports.delete",
       "reports.print",
       "reports.export",

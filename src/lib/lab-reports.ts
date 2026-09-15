@@ -524,6 +524,14 @@ export const updateLabReport =
           "reports.edit",
         );
 
+        // Updating a report also updates the linked patient record. Keep the
+        // two permission domains explicit instead of letting reports.edit
+        // silently grant patient-editing capabilities.
+        await requireLabPermission(
+          context.userId,
+          "patients.edit",
+        );
+
         const current =
           await sql<{
             id: string;
@@ -1427,16 +1435,11 @@ export const approveLabReport =
           await getReportForAction(
             context.userId,
             data.id,
-            "reports.edit",
+            "reports.approve",
           );
 
         if (
-          ![
-            "pending_review",
-            "draft",
-          ].includes(
-            report.status,
-          )
+          report.status !== "pending_review"
         ) {
           throw new Error(
             "REPORT_NOT_REVIEWABLE",
@@ -1567,6 +1570,18 @@ export const deleteLabReport =
          * connected to that patient.
          */
         if (patientId) {
+          const canDeletePatient = await (async () => {
+            try {
+              await requireLabPermission(
+                context.userId,
+                "patients.delete",
+              );
+              return true;
+            } catch {
+              return false;
+            }
+          })();
+
           const otherReports =
             await sql<{
               id: string;
@@ -1580,7 +1595,7 @@ export const deleteLabReport =
               limit 1
             `;
 
-          if (!otherReports.length) {
+          if (canDeletePatient && !otherReports.length) {
             await sql.query(
               `delete from patients
                where id=$1

@@ -6,16 +6,28 @@ import { PrintView } from "@/components/report/print-view";
 import { Button } from "@/components/ui/button";
 import { interpretResult, isCritical } from "@/lib/medical";
 import { approveLabReport, getLabReport, submitLabReportForReview } from "@/lib/lab-reports";
-import { getCurrentLab, type LabProfileData } from "@/lib/lab-access";
+import {
+  getCurrentLab,
+  getCurrentLabPermissions,
+  type LabProfileData,
+} from "@/lib/lab-access";
 import { reportStatusClasses, reportStatusLabels } from "@/lib/report-workflow";
 
 export const Route = createFileRoute("/reports/$id")({
   loader: async ({ params }) => {
     try {
-      const [report, lab] = await Promise.all([getLabReport({ data: { id: params.id } }), getCurrentLab()]);
-      return { report, lab };
+      const [report, lab, access] = await Promise.all([
+        getLabReport({ data: { id: params.id } }),
+        getCurrentLab(),
+        getCurrentLabPermissions(),
+      ]);
+      return { report, lab, access };
     } catch {
-      return { report: null, lab: null as LabProfileData | null };
+      return {
+        report: null,
+        lab: null as LabProfileData | null,
+        access: null,
+      };
     }
   },
   component: ReportDetail,
@@ -23,7 +35,7 @@ export const Route = createFileRoute("/reports/$id")({
 
 function ReportDetail() {
   const data = Route.useLoaderData();
-  const { lab } = data;
+  const { lab, access } = data;
   const [report, setReport] = useState(data.report);
   const [loading, setLoading] = useState<"submit" | "approve" | null>(null);
   const [error, setError] = useState("");
@@ -63,8 +75,14 @@ function ReportDetail() {
     finally { setLoading(null); }
   }
 
-  const canSubmit = ["owner", "technician", "reviewer"].includes(lab.role) && report.status === "draft";
-  const canApprove = ["owner", "reviewer"].includes(lab.role) && ["draft", "pending_review"].includes(report.status);
+  const isOwner = access?.role === "owner";
+  const canEdit = isOwner || access?.permissions["reports.edit"] === true;
+  const canSubmit = canEdit && report.status === "draft";
+  const canApprove =
+    (isOwner || access?.permissions["reports.approve"] === true) &&
+    report.status === "pending_review";
+  const canPrint = isOwner || access?.permissions["reports.print"] === true;
+  const canExport = isOwner || access?.permissions["reports.export"] === true;
 
   function shareSummaryText() {
     const lines = [
@@ -95,7 +113,7 @@ function ReportDetail() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link to="/reports" className="inline-flex h-11 items-center gap-2 text-sm text-ink-soft"><ArrowRight className="size-4" />الأرشيف</Link>
           <div className="flex flex-wrap items-center gap-2">
-            {report.status === "draft" ? <Button variant="secondary" asChild><Link to="/reports/edit/$id" params={{ id: report.id }}><Pencil className="size-4" />تعديل المسودة</Link></Button> : null}
+            {canEdit && report.status === "draft" ? <Button variant="secondary" asChild><Link to="/reports/edit/$id" params={{ id: report.id }}><Pencil className="size-4" />تعديل المسودة</Link></Button> : null}
             {canSubmit ? <Button variant="secondary" onClick={submitForReview} disabled={loading !== null}><Send className="size-4" />{loading === "submit" ? "جارٍ الإرسال…" : "إرسال للمراجعة"}</Button> : null}
             {canApprove ? <Button onClick={approve} disabled={loading !== null}><ClipboardCheck className="size-4" />{loading === "approve" ? "جارٍ الاعتماد…" : "اعتماد التقرير"}</Button> : null}
           </div>
@@ -111,10 +129,10 @@ function ReportDetail() {
         <div className="mx-auto mb-5 max-w-[820px] rounded-lg border border-line bg-elevated p-4">
           <p className="mb-3 text-sm font-medium">مشاركة التقرير</p>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            <ShareAction icon={<FileDown className="size-5" />} label="حفظ PDF" color="bg-red-500/10 text-red-600" onClick={() => window.print()} />
-            <ShareAction icon={<MessageCircle className="size-5" />} label="واتساب" color="bg-emerald-500/10 text-emerald-600" onClick={shareOnWhatsapp} />
-            <ShareAction icon={<Mail className="size-5" />} label="بريد إلكتروني" color="bg-teal/10 text-teal" onClick={shareByEmail} />
-            <ShareAction icon={<Printer className="size-5" />} label="طباعة" color="bg-slate-500/10 text-slate-600" onClick={() => window.print()} />
+            {canExport ? <ShareAction icon={<FileDown className="size-5" />} label="حفظ PDF" color="bg-red-500/10 text-red-600" onClick={() => window.print()} /> : null}
+            {canExport ? <ShareAction icon={<MessageCircle className="size-5" />} label="واتساب" color="bg-emerald-500/10 text-emerald-600" onClick={shareOnWhatsapp} /> : null}
+            {canExport ? <ShareAction icon={<Mail className="size-5" />} label="بريد إلكتروني" color="bg-teal/10 text-teal" onClick={shareByEmail} /> : null}
+            {canPrint ? <ShareAction icon={<Printer className="size-5" />} label="طباعة" color="bg-slate-500/10 text-slate-600" onClick={() => window.print()} /> : null}
           </div>
           <p className="mt-3 text-xs leading-5 text-muted">مشاركة واتساب والبريد بترسل ملخص نتائج التقرير كنص. لإرسال التقرير بشكله الكامل (PDF)، استخدم زر "حفظ PDF" ثم أرفق الملف يدويًا.</p>
         </div>

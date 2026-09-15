@@ -47,6 +47,7 @@ export const ALL_LAB_PERMISSIONS: LabPermission[] = [
   "reports.view",
   "reports.create",
   "reports.edit",
+  "reports.approve",
   "reports.delete",
   "reports.print",
   "reports.export",
@@ -351,7 +352,7 @@ export const createLabStaff = createServerFn({
         permissions?: LabPermissions;
       };
     }) => {
-      const { sql, labId } = await getManagerContext(
+      const { sql, labId, labUserId } = await getManagerContext(
         context.userId,
       );
 
@@ -460,6 +461,7 @@ export const updateLabStaff = createServerFn({
       context: { userId: string };
       data: {
         id: string;
+        name?: string;
         role?: Exclude<LabRole, "owner">;
         permissions?: LabPermissions;
         isActive?: boolean;
@@ -471,9 +473,11 @@ export const updateLabStaff = createServerFn({
 
       const rows = await sql<{
         id: string;
+        auth_user_id: string | null;
         role: LabRole;
+        is_active: boolean;
       }>`
-        select id, role
+        select id, auth_user_id, role, is_active
         from lab_users
         where id = ${data.id}
           and lab_id = ${labId}
@@ -502,12 +506,41 @@ export const updateLabStaff = createServerFn({
         throw new Error("الصلاحية غير صالحة");
       }
 
+      const normalizedName = data.name?.trim();
+
+      if (typeof data.name !== "undefined") {
+        if (!normalizedName) {
+          throw new Error("اسم الموظف مطلوب");
+        }
+        if (normalizedName.length > 120) {
+          throw new Error("اسم الموظف طويل جدًا");
+        }
+      }
+
       if (
+        typeof data.name === "undefined" &&
         typeof data.role === "undefined" &&
         typeof data.permissions === "undefined" &&
         typeof data.isActive === "undefined"
       ) {
         throw new Error("لا يوجد تعديل");
+      }
+
+      if (typeof data.isActive !== "undefined" && data.isActive === false && rows[0].is_active) {
+        const self = rows[0].auth_user_id === context.userId;
+        if (self) {
+          throw new Error("لا يمكنك إيقاف حسابك الحالي");
+        }
+      }
+
+      if (typeof data.name !== "undefined" && rows[0].auth_user_id) {
+        await sql.query(
+          `update "user"
+           set name=$1,
+               "updatedAt"=current_timestamp
+           where id=$2`,
+          [normalizedName, rows[0].auth_user_id],
+        );
       }
 
       if (typeof data.role !== "undefined") {
@@ -560,8 +593,38 @@ export const updateLabStaff = createServerFn({
         );
       }
 
+      const changedFields = [
+        typeof data.name !== "undefined" ? "name" : null,
+        typeof data.role !== "undefined" ? "role" : null,
+        typeof data.permissions !== "undefined" ? "permissions" : null,
+        typeof data.isActive !== "undefined" ? "isActive" : null,
+      ].filter(Boolean);
+
+      await sql.query(
+        `insert into audit_logs
+          (id, lab_id, actor_user_id, actor_auth_user_id, action, entity_type, entity_id, metadata_json)
+         values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [
+          randomUUID(),
+          labId,
+          labUserId,
+          context.userId,
+          "lab_user.updated",
+          "lab_user",
+          data.id,
+          JSON.stringify({ fields: changedFields }),
+        ],
+      );
+
       return {
         ok: true,
+        id: data.id,
+        name: normalizedName,
+        role: data.role,
+        permissions: typeof data.permissions !== "undefined"
+          ? normalizePermissions(data.permissions)
+          : undefined,
+        isActive: data.isActive,
       };
     },
   );
