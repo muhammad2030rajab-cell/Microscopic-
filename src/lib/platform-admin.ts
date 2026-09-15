@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { auth } from "@/lib/auth/server";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
+import { ensureLabDriveFolders } from "@/lib/storage/google-drive.server";
 
 async function assertPlatformAdmin(userId: string) {
   const sql = await getSql();
@@ -260,6 +261,20 @@ export const createLab = createServerFn({ method: "POST" })
             username,
           ],
         );
+
+        /* =====================================================
+           GOOGLE DRIVE
+           إنشاء مجلدات المعمل تلقائيًا
+        ===================================================== */
+
+        try {
+          await ensureLabDriveFolders(labId, name);
+        } catch (driveError) {
+          console.error(
+            "Google Drive setup failed for lab:",
+            driveError,
+          );
+        }
       } catch (error) {
         await sql
           .query(`delete from labs where id = $1`, [labId])
