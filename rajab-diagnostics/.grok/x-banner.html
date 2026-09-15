@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 1200px; height: 264px; overflow: hidden; }
+    body {
+      font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", sans-serif;
+      color: #152428;
+      background: linear-gradient(90deg, #F7F3EA 0%, #F3EEE4 55%, #EBE4D6 100%);
+    }
+    .bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 14px;
+      background: #1B6B66;
+    }
+    .mark {
+      position: absolute;
+      top: 36px;
+      left: 40px;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #1B6B66;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mark svg { width: 24px; height: 24px; }
+    .kicker {
+      position: absolute;
+      top: 40px;
+      left: 100px;
+      font-size: 11px;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: #1B6B66;
+      font-weight: 500;
+    }
+    .title {
+      position: absolute;
+      top: 68px;
+      left: 100px;
+      font-family: "Source Serif 4", Georgia, serif;
+      font-weight: 600;
+      font-size: 72px;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+    }
+    .sub {
+      position: absolute;
+      top: 142px;
+      left: 104px;
+      font-size: 13px;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      color: #3D4C50;
+      font-weight: 500;
+    }
+    .ar {
+      position: absolute;
+      top: 168px;
+      left: 104px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #1B6B66;
+    }
+    .sheet {
+      position: absolute;
+      top: 28px;
+      right: 36px;
+      width: 430px;
+      height: 208px;
+      background: #FFFCF6;
+      border: 1px solid #D4CDBF;
+      padding: 16px 18px 12px;
+    }
+    .sheet h2 {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 14px;
+      font-style: italic;
+      font-weight: 600;
+      border-bottom: 1px solid #152428;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      text-align: left;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6A7477;
+      font-weight: 500;
+      padding: 0 4px 6px;
+    }
+    td {
+      padding: 7px 4px;
+      border-top: 1px solid #E6DFD2;
+    }
+    .h { color: #9B2C2C; font-weight: 700; }
+    .l { color: #8A5410; font-weight: 700; }
+    .ok { font-weight: 600; }
+    .muted { color: #6A7477; }
+  </style>
+</head>
+<body>
+  <div class="bar"></div>
+  <div class="mark" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#F3EEE4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 2h4v6.2L19.4 18A5 5 0 0 1 15 22H9a5 5 0 0 1-4.4-4L10 8.2V2z"/>
+      <path d="M8.2 14h7.6"/>
+    </svg>
+  </div>
+  <p class="kicker">Clinical laboratory</p>
+  <h1 class="title">RAJAB</h1>
+  <p class="sub">Diagnostics</p>
+  <p class="ar">مختبر رجب للتحاليل الطبية</p>
+  <aside class="sheet">
+    <h2>Clinical Chemistry Unit</h2>
+    <table>
+      <thead>
+        <tr><th>Test</th><th>Result</th><th>Flag</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Fasting Glucose</td><td class="h">150</td><td class="h">H</td></tr>
+        <tr><td>Hemoglobin</td><td class="l">6.1</td><td class="l">L</td></tr>
+        <tr><td>ALT (SGPT)</td><td class="ok">25</td><td class="muted"> </td></tr>
+      </tbody>
+    </table>
+  </aside>
+</body>
+</html>
