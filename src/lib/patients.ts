@@ -262,7 +262,6 @@ export const createPatient = createServerFn({
 
       /* =====================================================
          DATABASE
-         نحفظ المريض أولًا في قاعدة البيانات
       ===================================================== */
 
       await sql.query(
@@ -295,7 +294,6 @@ export const createPatient = createServerFn({
 
       /* =====================================================
          GOOGLE DRIVE SYNC
-         لا نفشل إنشاء المريض إذا كان Drive غير متاح
       ===================================================== */
 
       const driveSync =
@@ -309,6 +307,24 @@ export const createPatient = createServerFn({
           phone: data.phone?.trim() || null,
           notes: data.notes?.trim() || null,
         });
+
+      /* =====================================================
+         SAVE DRIVE FILE ID
+      ===================================================== */
+
+      if (driveSync.fileId) {
+        await sql.query(
+          `update patients
+           set drive_file_id = $1
+           where id = $2
+             and lab_id = $3`,
+          [
+            driveSync.fileId,
+            id,
+            labId,
+          ],
+        );
+      }
 
       /* =====================================================
          AUDIT LOG
@@ -354,11 +370,12 @@ export const createPatient = createServerFn({
           patientCode || "",
         fullName,
         age,
-        gender: data.gender,
-
-        /* حالة المزامنة مع Google Drive */
+        gender:
+          data.gender,
         driveSyncStatus:
           driveSync.status,
+        driveFileId:
+          driveSync.fileId || null,
       };
     },
   );
