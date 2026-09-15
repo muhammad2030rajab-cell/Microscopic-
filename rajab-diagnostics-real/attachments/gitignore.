@@ -1,0 +1,34 @@
+# الملفات المؤقتة
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# ملفات البيئة
+.env
+*.env
+
+# ملفات PDF
+*.pdf
+*.docx
+
+# سجلات
+*.log
+
+# مجلدات التثبيت
+venv/
+env/
+ENV/
+myenv/
+
+# ملفات IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ملفات نظام التشغيل
+.DS_Store
+Thumbs.db

@@ -1,0 +1,77 @@
+name: Database Backup
+
+# Runs scripts/backup-db.mjs on a schedule and keeps the result as a workflow
+# artifact. Exists because this app deploys to Vercel (see vite.config.ts's
+# Nitro "vercel" preset), which is serverless — there is no long-running
+# process on Vercel itself to hang a cron job off of, so the schedule lives
+# here in GitHub Actions instead (see PRODUCTION_READINESS.md, item 6 in
+# "لسه محتاج تنفيذه إنت").
+#
+# One-time setup required (this workflow does nothing useful without it):
+#   Repo → Settings → Secrets and variables → Actions → New repository secret
+#     Name:  DATABASE_URL
+#     Value: the SAME connection string set in Vercel's env vars
+#
+# A failed scheduled run automatically emails whoever has notifications on
+# for this repo (Actions failure emails are a GitHub default) — that is this
+# project's monitoring for "did last night's backup actually happen".
+
+on:
+  schedule:
+    # 03:00 UTC daily. Adjust to whenever traffic on the labs is lowest —
+    # cron is always UTC regardless of where your labs are.
+    - cron: "0 3 * * *"
+  # Lets you trigger a backup on demand from the Actions tab, e.g. right
+  # before a risky migration or a manual data cleanup.
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # scripts/backup-db.mjs only imports Node builtins + "pg" — installing
+      # just that (instead of `npm ci` for the whole app) keeps this fast and
+      # means the workflow never breaks because of an unrelated frontend
+      # dependency failing to install.
+      - name: Install backup script dependency (pg)
+        run: npm install pg@8 --no-save
+
+      - name: Run backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: node scripts/backup-db.mjs ./backups
+
+      # Stored as a workflow artifact, NEVER committed to the repo (backups/
+      # is in .gitignore — a git history is the wrong place for a file full
+      # of password hashes and patient data). 30 days here; raise it if you
+      # want a longer on-GitHub retention window, keeping in mind GitHub
+      # Actions storage has its own quota/cost past the free tier.
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backups/*.json.gz
+          retention-days: 30
+          if-no-files-found: error
+
+      # --- Optional: also ship a copy off-GitHub (recommended for real
+      # production use — GitHub Actions artifacts are convenient, not a
+      # long-term backup vault). Uncomment and add these repo secrets to
+      # enable: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET.
+      #
+      # - name: Upload to S3
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: us-east-1
+      # - run: aws s3 cp backups/ "s3://${{ secrets.AWS_S3_BUCKET }}/rajab-diagnostics/" --recursive
