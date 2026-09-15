@@ -5,6 +5,7 @@ import {
   requireLabPermission,
   type LabPermission,
 } from "@/lib/lab-users";
+import { savePatientToDrive } from "@/lib/storage/storage.server";
 
 async function currentLab(
   userId: string,
@@ -257,8 +258,12 @@ export const createPatient = createServerFn({
         }
       }
 
-      const id =
-        crypto.randomUUID();
+      const id = crypto.randomUUID();
+
+      /* =====================================================
+         DATABASE
+         نحفظ المريض أولًا في قاعدة البيانات
+      ===================================================== */
 
       await sql.query(
         `insert into patients
@@ -282,14 +287,32 @@ export const createPatient = createServerFn({
           fullName,
           age,
           data.gender,
-          data.phone?.trim() ||
-            null,
-          data.nationalId?.trim() ||
-            null,
-          data.notes?.trim() ||
-            null,
+          data.phone?.trim() || null,
+          data.nationalId?.trim() || null,
+          data.notes?.trim() || null,
         ],
       );
+
+      /* =====================================================
+         GOOGLE DRIVE SYNC
+         لا نفشل إنشاء المريض إذا كان Drive غير متاح
+      ===================================================== */
+
+      const driveSync =
+        await savePatientToDrive({
+          labId,
+          patientId: id,
+          patientCode,
+          fullName,
+          age,
+          gender: data.gender,
+          phone: data.phone?.trim() || null,
+          notes: data.notes?.trim() || null,
+        });
+
+      /* =====================================================
+         AUDIT LOG
+      ===================================================== */
 
       const actor =
         await sql<{ id: string }>`
@@ -317,8 +340,7 @@ export const createPatient = createServerFn({
         [
           crypto.randomUUID(),
           labId,
-          actor[0]?.id ||
-            null,
+          actor[0]?.id || null,
           context.userId,
           "patient.created",
           "patient",
@@ -332,8 +354,11 @@ export const createPatient = createServerFn({
           patientCode || "",
         fullName,
         age,
-        gender:
-          data.gender,
+        gender: data.gender,
+
+        /* حالة المزامنة مع Google Drive */
+        driveSyncStatus:
+          driveSync.status,
       };
     },
   );
