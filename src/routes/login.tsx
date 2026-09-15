@@ -2,10 +2,10 @@ import { useState, type FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   LockKeyhole,
+  MessageCircle,
   Microscope,
   ShieldCheck,
   UserRound,
-  MessageCircle,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth/client";
@@ -83,15 +83,15 @@ function Login() {
     setError("الحساب غير مرتبط بمدير أو بمعمل نشط.");
   }
 
-  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-    WHATSAPP_MESSAGE,
-  )}`;
+  const whatsappUrl =
+    `https://wa.me/${WHATSAPP_NUMBER}?text=` +
+    encodeURIComponent(WHATSAPP_MESSAGE);
 
   return (
     <main className="min-h-screen bg-paper px-4 py-8 sm:px-6">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
 
-        {/* الجانب التعريفي */}
+        {/* التعريف بالنظام */}
         <section className="hidden rounded-2xl bg-ink p-10 text-paper lg:block">
           <div className="flex items-center gap-3">
             <span className="grid size-11 place-items-center rounded-xl bg-teal text-teal-fg">
@@ -114,7 +114,7 @@ function Login() {
           </h1>
 
           <p className="mt-5 max-w-lg text-sm leading-7 text-paper/65">
-            نظام متكامل لإدارة المعامل، المستخدمين، التقارير والصلاحيات من
+            نظام متكامل لإدارة المعامل والمستخدمين والتقارير والصلاحيات من
             مكان واحد.
           </p>
         </section>
@@ -132,14 +132,13 @@ function Login() {
             </h1>
 
             <p className="mt-2 text-sm text-muted">
-              اختر نوع الحساب
+              اختر نوع الحساب للدخول إلى النظام
             </p>
           </div>
 
-          {/* اختيار نوع الحساب */}
+          {/* اختيار الحساب */}
           <div className="mb-6 grid grid-cols-2 gap-3">
 
-            {/* المدير */}
             <button
               type="button"
               onClick={() => {
@@ -171,7 +170,6 @@ function Login() {
               </p>
             </button>
 
-            {/* المستخدم */}
             <button
               type="button"
               onClick={() => {
@@ -202,9 +200,10 @@ function Login() {
                 إدارة المعمل
               </p>
             </button>
+
           </div>
 
-          {/* نوع الدخول الحالي */}
+          {/* نوع الحساب */}
           <div className="mb-5 rounded-lg bg-paper-2 px-3 py-2 text-center text-sm">
             {isAdmin ? (
               <span>
@@ -217,9 +216,9 @@ function Login() {
             )}
           </div>
 
+          {/* نموذج الدخول */}
           <form onSubmit={submit} className="space-y-4">
 
-            {/* اسم الدخول */}
             <div className="space-y-1.5">
               <Label htmlFor="login">
                 {isAdmin
@@ -243,7 +242,6 @@ function Login() {
               />
             </div>
 
-            {/* كلمة المرور */}
             <div className="space-y-1.5">
               <Label htmlFor="password">
                 كلمة المرور
@@ -267,14 +265,12 @@ function Login() {
               </div>
             </div>
 
-            {/* الخطأ */}
             {error ? (
               <p className="rounded-lg border border-high/20 bg-high/5 px-3 py-2 text-sm text-high">
                 {error}
               </p>
             ) : null}
 
-            {/* دخول */}
             <Button
               type="submit"
               size="lg"
@@ -287,9 +283,10 @@ function Login() {
                   ? "دخول المدير"
                   : "دخول المستخدم"}
             </Button>
+
           </form>
 
-          {/* WhatsApp للمستخدم فقط */}
+          {/* طلب حساب - للمستخدم فقط */}
           {!isAdmin ? (
             <div className="mt-6 rounded-xl border border-line bg-paper-2 p-4 text-center">
 
@@ -314,162 +311,9 @@ function Login() {
                 <MessageCircle className="size-4" />
                 طلب إنشاء حساب عبر WhatsApp
               </a>
+
             </div>
           ) : null}
-
-        </section>
-      </div>
-    </main>
-  );
-}
-          <p className="mt-5 max-w-lg text-sm leading-7 text-paper/65">
-            نظام متكامل لإدارة المعامل، المستخدمين، التقارير، والصلاحيات من
-            مكان واحد.
-          </p>
-        </section>
-
-        {/* صفحة الدخول */}
-        <section className="mx-auto w-full max-w-md rounded-2xl border border-line bg-elevated p-6 shadow-sm sm:p-8">
-
-          <div className="mb-7 text-center">
-            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-teal/10 text-teal">
-              <ShieldCheck className="size-6" />
-            </div>
-
-            <h1 className="font-display text-2xl font-semibold">
-              تسجيل الدخول
-            </h1>
-
-            <p className="mt-2 text-sm text-muted">
-              اختر نوع الحساب للدخول إلى النظام
-            </p>
-          </div>
-
-          {/* اختيار نوع الحساب */}
-          <div className="mb-6 grid grid-cols-2 gap-3">
-
-            {/* المدير */}
-            <div className="rounded-xl border border-line bg-paper-2 p-4 text-center">
-              <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-full bg-ink text-paper">
-                <ShieldCheck className="size-5" />
-              </div>
-
-              <p className="font-semibold">المدير</p>
-
-              <p className="mt-1 text-xs text-muted">
-                إدارة النظام
-              </p>
-            </div>
-
-            {/* المستخدم */}
-            <div className="rounded-xl border border-teal/30 bg-teal/5 p-4 text-center">
-              <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-full bg-teal text-teal-fg">
-                <UserRound className="size-5" />
-              </div>
-
-              <p className="font-semibold">المستخدم</p>
-
-              <p className="mt-1 text-xs text-muted">
-                إدارة المعمل
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={submit} className="space-y-4">
-
-            <div className="space-y-1.5">
-              <Label htmlFor="login">
-                اسم المستخدم أو البريد الإلكتروني
-              </Label>
-
-              <Input
-                id="login"
-                type="text"
-                autoComplete="username"
-                value={login}
-                onChange={(e) => setLogin(e.target.value)}
-                required
-                dir="ltr"
-                placeholder="admin@example.com أو lab_username"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="password">
-                كلمة المرور
-              </Label>
-
-              <div className="relative">
-                <LockKeyhole className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  dir="ltr"
-                  className="ps-9"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
-            {error ? (
-              <p className="rounded-lg border border-high/20 bg-high/5 px-3 py-2 text-sm text-high">
-                {error}
-              </p>
-            ) : null}
-
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? "جارٍ تسجيل الدخول…" : "دخول النظام"}
-            </Button>
-          </form>
-
-          {/* طلب إنشاء حساب */}
-          <div className="mt-6 rounded-xl border border-line bg-paper-2 p-4 text-center">
-
-            <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-full bg-[#25D366]/10 text-[#25D366]">
-              <MessageCircle className="size-5" />
-            </div>
-
-            <p className="text-sm font-medium">
-              ليس لديك حساب؟
-            </p>
-
-            <p className="mt-1 text-xs text-muted">
-              تواصل معنا لطلب إنشاء حساب للمعمل
-            </p>
-
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            >
-              <MessageCircle className="size-4" />
-              طلب إنشاء حساب عبر WhatsApp
-            </a>
-          </div>
-
-          {/* إنشاء حساب المدير الأول */}
-          <div className="mt-5 border-t border-line pt-5 text-center text-sm text-muted">
-            أول مرة تستخدم النظام؟
-            {" "}
-            <Link
-              to="/admin/setup"
-              className="font-medium text-teal hover:underline"
-            >
-              إنشاء حساب المدير الأول
-            </Link>
-          </div>
 
         </section>
       </div>
