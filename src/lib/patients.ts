@@ -1,21 +1,57 @@
 import { createServerFn } from "@tanstack/react-start";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
+import {
+  requireLabPermission,
+  type LabPermission,
+} from "@/lib/lab-users";
 
-async function currentLab(userId: string) {
+async function currentLab(
+  userId: string,
+  permission?: LabPermission,
+) {
   const sql = await getSql();
-  const rows = await sql<{ lab_id: string }>`
-    select lu.lab_id
+
+  const rows = await sql<{
+    id: string;
+    lab_id: string;
+    role: string;
+  }>`
+    select
+      lu.id,
+      lu.lab_id,
+      lu.role
     from lab_users lu
-    inner join labs l on l.id = lu.lab_id
-    where lu.auth_user_id = ${userId} and lu.is_active = true and l.is_active = true
+    inner join labs l
+      on l.id = lu.lab_id
+    where lu.auth_user_id = ${userId}
+      and lu.is_active = true
+      and l.is_active = true
     limit 1
   `;
 
-  if (!rows.length) throw new Error("LAB_ACCESS_REQUIRED");
+  if (!rows.length) {
+    throw new Error("LAB_ACCESS_REQUIRED");
+  }
 
-  return { sql, labId: rows[0].lab_id };
+  if (permission) {
+    await requireLabPermission(
+      userId,
+      permission,
+    );
+  }
+
+  return {
+    sql,
+    labId: rows[0].lab_id,
+    labUserId: rows[0].id,
+    role: rows[0].role,
+  };
 }
+
+/* =========================================================
+   PATIENT TYPES
+========================================================= */
 
 export type PatientSummary = {
   id: string;
@@ -29,7 +65,14 @@ export type PatientSummary = {
   lastReportAt?: string;
 };
 
-export const searchLabPatients = createServerFn({ method: "GET" })
+/* =========================================================
+   SEARCH PATIENTS
+   Permission: patients.view
+========================================================= */
+
+export const searchLabPatients = createServerFn({
+  method: "GET",
+})
   .middleware([authMiddleware])
   .handler(
     async ({
@@ -39,7 +82,11 @@ export const searchLabPatients = createServerFn({ method: "GET" })
       context: { userId: string };
       data: { query?: string };
     }) => {
-      const { sql, labId } = await currentLab(context.userId);
+      const { sql, labId } =
+        await currentLab(
+          context.userId,
+          "patients.view",
+        );
 
       const query = (data.query || "").trim();
 
@@ -77,30 +124,58 @@ export const searchLabPatients = createServerFn({ method: "GET" })
         where p.lab_id = ${labId}
           and (
             p.full_name ilike ${like}
-            or coalesce(p.patient_code, '') ilike ${like}
-            or coalesce(p.phone, '') ilike ${like}
-            or coalesce(p.national_id, '') ilike ${like}
+            or coalesce(
+              p.patient_code,
+              ''
+            ) ilike ${like}
+            or coalesce(
+              p.phone,
+              ''
+            ) ilike ${like}
+            or coalesce(
+              p.national_id,
+              ''
+            ) ilike ${like}
           )
-        group by p.id
-        order by max(r.created_at) desc nulls last, p.full_name asc
+        group by
+          p.id,
+          p.patient_code,
+          p.full_name,
+          p.age,
+          p.gender,
+          p.phone,
+          p.national_id
+        order by
+          max(r.created_at) desc nulls last,
+          p.full_name asc
         limit 12
       `;
 
       return rows.map((p) => ({
         id: p.id,
-        patientCode: p.patient_code || "",
+        patientCode:
+          p.patient_code || "",
         fullName: p.full_name,
         age: Number(p.age || 0),
         gender: p.gender,
-        phone: p.phone || undefined,
-        nationalId: p.national_id || undefined,
-        reportCount: Number(p.report_count || 0),
-        lastReportAt: p.last_report_at
-          ? String(p.last_report_at)
-          : undefined,
+        phone:
+          p.phone || undefined,
+        nationalId:
+          p.national_id || undefined,
+        reportCount:
+          Number(p.report_count || 0),
+        lastReportAt:
+          p.last_report_at
+            ? String(p.last_report_at)
+            : undefined,
       }));
     },
   );
+
+/* =========================================================
+   CREATE PATIENT
+   Permission: patients.create
+========================================================= */
 
 export type CreatePatientInput = {
   patientCode?: string;
@@ -112,7 +187,9 @@ export type CreatePatientInput = {
   notes?: string;
 };
 
-export const createPatient = createServerFn({ method: "POST" })
+export const createPatient = createServerFn({
+  method: "POST",
+})
   .middleware([authMiddleware])
   .handler(
     async ({
@@ -122,34 +199,56 @@ export const createPatient = createServerFn({ method: "POST" })
       context: { userId: string };
       data: CreatePatientInput;
     }) => {
-      const { sql, labId } = await currentLab(context.userId);
+      const { sql, labId } =
+        await currentLab(
+          context.userId,
+          "patients.create",
+        );
 
-      const fullName = data.fullName.trim();
+      const fullName =
+        data.fullName.trim();
+
       const age = Number(data.age);
 
       if (fullName.length < 2) {
-        throw new Error("اسم المريض غير صالح");
+        throw new Error(
+          "اسم المريض غير صالح",
+        );
       }
 
-      if (!Number.isInteger(age) || age <= 0 || age > 130) {
-        throw new Error("السن غير صالح");
+      if (
+        !Number.isInteger(age) ||
+        age <= 0 ||
+        age > 130
+      ) {
+        throw new Error(
+          "السن غير صالح",
+        );
       }
 
-      if (data.gender !== "ذكر" && data.gender !== "أنثى") {
-        throw new Error("النوع غير صالح");
+      if (
+        data.gender !== "ذكر" &&
+        data.gender !== "أنثى"
+      ) {
+        throw new Error(
+          "النوع غير صالح",
+        );
       }
 
       const patientCode =
-        data.patientCode?.trim().toUpperCase() || null;
+        data.patientCode
+          ?.trim()
+          .toUpperCase() || null;
 
       if (patientCode) {
-        const duplicate = await sql<{ id: string }>`
-          select id
-          from patients
-          where lab_id = ${labId}
-            and patient_code = ${patientCode}
-          limit 1
-        `;
+        const duplicate =
+          await sql<{ id: string }>`
+            select id
+            from patients
+            where lab_id = ${labId}
+              and patient_code = ${patientCode}
+            limit 1
+          `;
 
         if (duplicate.length) {
           throw new Error(
@@ -158,7 +257,8 @@ export const createPatient = createServerFn({ method: "POST" })
         }
       }
 
-      const id = crypto.randomUUID();
+      const id =
+        crypto.randomUUID();
 
       await sql.query(
         `insert into patients
@@ -173,7 +273,8 @@ export const createPatient = createServerFn({ method: "POST" })
           national_id,
           notes
         )
-        values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        values
+        ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [
           id,
           labId,
@@ -181,19 +282,24 @@ export const createPatient = createServerFn({ method: "POST" })
           fullName,
           age,
           data.gender,
-          data.phone?.trim() || null,
-          data.nationalId?.trim() || null,
-          data.notes?.trim() || null,
+          data.phone?.trim() ||
+            null,
+          data.nationalId?.trim() ||
+            null,
+          data.notes?.trim() ||
+            null,
         ],
       );
 
-      const actor = await sql<{ id: string }>`
-        select id
-        from lab_users
-        where auth_user_id = ${context.userId}
-          and lab_id = ${labId}
-        limit 1
-      `;
+      const actor =
+        await sql<{ id: string }>`
+          select id
+          from lab_users
+          where auth_user_id =
+            ${context.userId}
+            and lab_id = ${labId}
+          limit 1
+        `;
 
       await sql.query(
         `insert into audit_logs
@@ -206,11 +312,13 @@ export const createPatient = createServerFn({ method: "POST" })
           entity_type,
           entity_id
         )
-        values ($1,$2,$3,$4,$5,$6,$7)`,
+        values
+        ($1,$2,$3,$4,$5,$6,$7)`,
         [
           crypto.randomUUID(),
           labId,
-          actor[0]?.id || null,
+          actor[0]?.id ||
+            null,
           context.userId,
           "patient.created",
           "patient",
@@ -220,45 +328,70 @@ export const createPatient = createServerFn({ method: "POST" })
 
       return {
         id,
-        patientCode: patientCode || "",
+        patientCode:
+          patientCode || "",
         fullName,
         age,
-        gender: data.gender,
+        gender:
+          data.gender,
       };
     },
   );
 
-export const getPatientReports = createServerFn({ method: "GET" })
-  .middleware([authMiddleware])
-  .handler(
-    async ({
-      context,
-      data,
-    }: {
-      context: { userId: string };
-      data: { patientId: string };
-    }) => {
-      const { sql, labId } = await currentLab(context.userId);
+/* =========================================================
+   GET PATIENT REPORTS
+   Permission: patients.view
+========================================================= */
 
-      return await sql<{
-        id: string;
-        sample_id: string | null;
-        status: string;
-        created_at: string | Date;
-      }>`
-        select
-          r.id,
-          r.sample_id,
-          r.status,
-          r.created_at
-        from reports r
-        inner join patients p
-          on p.id = r.patient_id
-          and p.lab_id = r.lab_id
-        where r.patient_id = ${data.patientId}
-          and r.lab_id = ${labId}
-        order by r.created_at desc
-        limit 30
-      `;
-    },
-  );
+export const getPatientReports =
+  createServerFn({
+    method: "GET",
+  })
+    .middleware([authMiddleware])
+    .handler(
+      async ({
+        context,
+        data,
+      }: {
+        context: {
+          userId: string;
+        };
+        data: {
+          patientId: string;
+        };
+      }) => {
+        const { sql, labId } =
+          await currentLab(
+            context.userId,
+            "patients.view",
+          );
+
+        return await sql<{
+          id: string;
+          sample_id: string | null;
+          status: string;
+          created_at:
+            | string
+            | Date;
+        }>`
+          select
+            r.id,
+            r.sample_id,
+            r.status,
+            r.created_at
+          from reports r
+          inner join patients p
+            on p.id =
+              r.patient_id
+            and p.lab_id =
+              r.lab_id
+          where r.patient_id =
+            ${data.patientId}
+            and r.lab_id =
+              ${labId}
+          order by
+            r.created_at desc
+          limit 30
+        `;
+      },
+    );
