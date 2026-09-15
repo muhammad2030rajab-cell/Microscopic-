@@ -1,122 +1,838 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { ArrowRight, CheckCircle2, UserPlus, Users, UserX } from "lucide-react";
+import {
+  useEffect,
+  useState,
+  type FormEvent,
+} from "react";
+
+import {
+  createFileRoute,
+  Link,
+  Navigate,
+} from "@tanstack/react-router";
+
+import {
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ShieldCheck,
+  UserPlus,
+  UserX,
+  Users,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getCurrentLab, type LabProfileData } from "@/lib/lab-access";
-import { createLabStaff, listLabStaff, updateLabStaff, type LabRole, type LabStaff } from "@/lib/lab-users";
+
+import {
+  getCurrentLab,
+  type LabProfileData,
+} from "@/lib/lab-access";
+
+import {
+  createLabStaff,
+  getCurrentLabPermissions,
+  listLabStaff,
+  updateLabStaff,
+  type LabPermission,
+  type LabPermissions,
+  type LabRole,
+  type LabStaff,
+} from "@/lib/lab-users";
 
 export const Route = createFileRoute("/team")({
   loader: async () => {
     try {
-      const [lab, staff] = await Promise.all([getCurrentLab(), listLabStaff()]);
-      return { lab, staff };
+      const [lab, access] = await Promise.all([
+        getCurrentLab(),
+        getCurrentLabPermissions(),
+      ]);
+
+      let staff: LabStaff[] = [];
+
+      if (
+        access.role === "owner" ||
+        access.permissions["users.manage"] === true
+      ) {
+        staff = await listLabStaff();
+      }
+
+      return {
+        lab,
+        access,
+        staff,
+      };
     } catch {
-      return { lab: null as LabProfileData | null, staff: [] as LabStaff[] };
+      return {
+        lab: null as LabProfileData | null,
+        access: {
+          labId: null,
+          labUserId: null,
+          role: null,
+          permissions: {} as LabPermissions,
+        },
+        staff: [] as LabStaff[],
+      };
     }
   },
+
   component: TeamPage,
 });
 
-const roleLabels: Record<Exclude<LabRole, "owner">, string> = {
+const roleLabels: Record<
+  Exclude<LabRole, "owner">,
+  string
+> = {
+  supervisor: "مشرف",
   technician: "فني معمل",
   reviewer: "مراجع",
   viewer: "مشاهد",
 };
 
+const permissionLabels: Record<
+  LabPermission,
+  string
+> = {
+  "patients.view": "مشاهدة المرضى",
+  "patients.create": "إضافة مريض",
+  "patients.edit": "تعديل بيانات المريض",
+  "patients.delete": "حذف مريض",
+
+  "reports.view": "مشاهدة التقارير",
+  "reports.create": "إنشاء تقرير",
+  "reports.edit": "تعديل التقرير",
+  "reports.delete": "حذف التقرير",
+  "reports.print": "طباعة التقارير",
+  "reports.export": "تصدير التقارير",
+
+  "users.manage": "إدارة مستخدمي المعمل",
+};
+
+const patientPermissions: LabPermission[] = [
+  "patients.view",
+  "patients.create",
+  "patients.edit",
+  "patients.delete",
+];
+
+const reportPermissions: LabPermission[] = [
+  "reports.view",
+  "reports.create",
+  "reports.edit",
+  "reports.delete",
+  "reports.print",
+  "reports.export",
+];
+
 function TeamPage() {
-  const { lab, staff: initialStaff } = Route.useLoaderData();
-  const [staff, setStaff] = useState<LabStaff[]>(initialStaff);
+  const {
+    lab,
+    access,
+    staff: initialStaff,
+  } = Route.useLoaderData();
+
+  const [staff, setStaff] =
+    useState<LabStaff[]>(initialStaff);
+
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Exclude<LabRole, "owner">>("technician");
+
+  const [role, setRole] =
+    useState<Exclude<LabRole, "owner">>("supervisor");
+
+  const [permissions, setPermissions] =
+    useState<LabPermissions>({
+      "patients.view": true,
+      "patients.create": true,
+      "reports.view": true,
+      "reports.create": true,
+      "reports.print": true,
+    });
+
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] =
+    useState<string | null>(null);
+
+  const [editingPermissions, setEditingPermissions] =
+    useState<LabPermissions>({});
+
+  const [editingRole, setEditingRole] =
+    useState<Exclude<LabRole, "owner">>("supervisor");
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  useEffect(() => setStaff(initialStaff), [initialStaff]);
+  useEffect(() => {
+    setStaff(initialStaff);
+  }, [initialStaff]);
 
-  if (!lab) return <Navigate to="/login" replace />;
-  if (lab.role !== "owner") return <Navigate to="/lab" />;
+  if (!lab) {
+    return <Navigate to="/login" replace />;
+  }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  const canManageUsers =
+    access.role === "owner" ||
+    access.permissions["users.manage"] === true;
+
+  if (!canManageUsers) {
+    return <Navigate to="/lab" replace />;
+  }
+
+  function togglePermission(
+    permission: LabPermission,
+    current: LabPermissions,
+    setter: (
+      value: LabPermissions,
+    ) => void,
+  ) {
+    setter({
+      ...current,
+      [permission]: current[permission] !== true,
+    });
+  }
+
+  function setPermissionGroup(
+    group: LabPermission[],
+    enabled: boolean,
+    current: LabPermissions,
+    setter: (
+      value: LabPermissions,
+    ) => void,
+  ) {
+    const next = {
+      ...current,
+    };
+
+    for (const permission of group) {
+      next[permission] = enabled;
+    }
+
+    setter(next);
+  }
+
+  function countEnabled(
+    values: LabPermissions,
+  ) {
+    return Object.values(values).filter(
+      (value) => value === true,
+    ).length;
+  }
+
+  async function submit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
+
     setError("");
     setSuccess("");
     setLoading(true);
+
     try {
-      const created = await createLabStaff({ data: { username, name, password, role } });
+      const created = await createLabStaff({
+        data: {
+          username,
+          name,
+          password,
+          role,
+          permissions,
+        },
+      });
+
       setStaff((current) => [
         ...current,
-        { id: created.id, username: created.username, name: created.name, role: created.role, isActive: true, createdAt: new Date().toISOString() },
+        {
+          id: created.id,
+          username: created.username,
+          name: created.name,
+          role: created.role,
+          permissions: created.permissions,
+          isActive: true,
+          createdAt:
+            new Date().toISOString(),
+        },
       ]);
-      setUsername(""); setName(""); setPassword(""); setRole("technician");
-      setSuccess(`تم إنشاء حساب ${created.username} بنجاح`);
+
+      setUsername("");
+      setName("");
+      setPassword("");
+      setRole("supervisor");
+
+      setPermissions({
+        "patients.view": true,
+        "patients.create": true,
+        "reports.view": true,
+        "reports.create": true,
+        "reports.print": true,
+      });
+
+      setSuccess(
+        `تم إنشاء حساب ${created.username} بنجاح ✅`,
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر إنشاء الحساب");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "تعذر إنشاء الحساب",
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function changeStaff(id: string, patch: { role?: Exclude<LabRole, "owner">; isActive?: boolean }) {
+  function startEditing(member: LabStaff) {
+    setError("");
+    setSuccess("");
+
+    setEditingId(member.id);
+
+    setEditingRole(
+      member.role === "owner"
+        ? "supervisor"
+        : member.role,
+    );
+
+    setEditingPermissions({
+      ...member.permissions,
+    });
+  }
+
+  function cancelEditing() {
+    setEditingId(null);
+    setEditingPermissions({});
+  }
+
+  async function saveEditing(
+    member: LabStaff,
+  ) {
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
     try {
-      await updateLabStaff({ data: { id, ...patch } });
-      setStaff((current) => current.map((member) => member.id === id ? { ...member, ...patch } : member));
+      await updateLabStaff({
+        data: {
+          id: member.id,
+          role: editingRole,
+          permissions: editingPermissions,
+        },
+      });
+
+      setStaff((current) =>
+        current.map((item) =>
+          item.id === member.id
+            ? {
+                ...item,
+                role: editingRole,
+                permissions:
+                  editingPermissions,
+              }
+            : item,
+        ),
+      );
+
+      setEditingId(null);
+      setEditingPermissions({});
+
+      setSuccess(
+        `تم تحديث صلاحيات ${member.username} بنجاح ✅`,
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تعديل الحساب");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "تعذر تحديث الصلاحيات",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function changeActive(
+    member: LabStaff,
+  ) {
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    try {
+      await updateLabStaff({
+        data: {
+          id: member.id,
+          isActive: !member.isActive,
+        },
+      });
+
+      setStaff((current) =>
+        current.map((item) =>
+          item.id === member.id
+            ? {
+                ...item,
+                isActive: !item.isActive,
+              }
+            : item,
+        ),
+      );
+
+      setSuccess(
+        member.isActive
+          ? `تم إيقاف ${member.username}`
+          : `تم تفعيل ${member.username} ✅`,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "تعذر تعديل حالة الحساب",
+      );
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-paper">
+    <main
+      dir="rtl"
+      className="min-h-screen bg-paper"
+    >
+      {/* Header */}
       <header className="border-b border-line bg-elevated">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div><p className="text-[11px] uppercase tracking-[0.2em] text-muted">Laboratory team</p><h1 className="mt-1 font-display text-xl font-semibold">مستخدمو المعمل 👥</h1></div>
-          <Link to="/lab" className="inline-flex items-center gap-2 text-sm text-teal hover:underline"><ArrowRight className="size-4" /> لوحة المعمل</Link>
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted">
+              Laboratory Team
+            </p>
+
+            <h1 className="mt-1 font-display text-xl font-semibold">
+              مستخدمو المعمل 👥
+            </h1>
+          </div>
+
+          <Link
+            to="/lab"
+            className="inline-flex items-center gap-2 text-sm text-teal hover:underline"
+          >
+            <ArrowRight className="size-4" />
+            لوحة المعمل
+          </Link>
         </div>
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        {/* Hero */}
         <section className="rounded-2xl bg-ink p-6 text-paper sm:p-8">
-          <p className="text-sm text-paper/60">{lab.lab_name}</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold">إدارة فريق المعمل</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-paper/65">أنشئ حسابًا مستقلًا لكل موظف وحدد بالضبط ما يستطيع فعله داخل النظام.</p>
+          <div className="flex items-start gap-4">
+            <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-teal/20">
+              <ShieldCheck className="size-6 text-paper" />
+            </div>
+
+            <div>
+              <p className="text-sm text-paper/60">
+                {lab.lab_name}
+              </p>
+
+              <h2 className="mt-2 font-display text-2xl font-semibold sm:text-3xl">
+                إدارة فريق المعمل
+              </h2>
+
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-paper/65">
+                أنشئ حسابًا مستقلًا لكل مستخدم،
+                وحدد بالضبط ما يستطيع فعله داخل
+                المعمل.
+              </p>
+            </div>
+          </div>
         </section>
 
-        {success ? <div className="mt-5 flex items-start gap-3 rounded-xl border border-ok/20 bg-ok/5 p-4 text-sm"><CheckCircle2 className="mt-0.5 size-5 shrink-0 text-ok" /><p>{success} ✅</p></div> : null}
-        {error ? <div className="mt-5 rounded-xl border border-high/20 bg-high/5 p-4 text-sm text-high">{error}</div> : null}
+        {/* Messages */}
+        {success ? (
+          <div className="mt-5 flex items-start gap-3 rounded-xl border border-ok/20 bg-ok/5 p-4 text-sm">
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-ok" />
+
+            <p>{success}</p>
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="mt-5 rounded-xl border border-high/20 bg-high/5 p-4 text-sm text-high">
+            {error}
+          </div>
+        ) : null}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+          {/* Current team */}
           <section className="rounded-xl border border-line bg-elevated p-5 sm:p-6">
-            <div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-lg bg-teal/10 text-teal"><Users className="size-5" /></div><div><h3 className="font-display text-xl font-semibold">الفريق الحالي</h3><p className="text-sm text-muted">{staff.length} حساب داخل المعمل</p></div></div>
+            <div className="flex items-center gap-3">
+              <div className="grid size-10 place-items-center rounded-lg bg-teal/10 text-teal">
+                <Users className="size-5" />
+              </div>
+
+              <div>
+                <h3 className="font-display text-xl font-semibold">
+                  الفريق الحالي
+                </h3>
+
+                <p className="text-sm text-muted">
+                  {staff.length} حساب داخل المعمل
+                </p>
+              </div>
+            </div>
+
             <div className="mt-5 space-y-3">
-              {staff.map((member) => (
-                <div key={member.id} className="rounded-lg border border-line p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{member.name || member.username}</p><span className="rounded-full bg-teal/10 px-2 py-0.5 text-[11px] text-teal">{member.role === "owner" ? "مالك المعمل" : roleLabels[member.role]}</span><span className={`rounded-full px-2 py-0.5 text-[11px] ${member.isActive ? "bg-ok/10 text-ok" : "bg-high/10 text-high"}`}>{member.isActive ? "نشط" : "موقوف"}</span></div><p className="mt-1 text-xs text-muted" dir="ltr">{member.username}</p></div>
-                    {member.role !== "owner" ? <div className="flex flex-wrap items-center gap-2">
-                      <select className="h-9 rounded-sm border border-line bg-elevated px-2 text-xs" value={member.role} onChange={(e) => changeStaff(member.id, { role: e.target.value as Exclude<LabRole, "owner"> })}>
-                        <option value="technician">فني معمل</option><option value="reviewer">مراجع</option><option value="viewer">مشاهد</option>
-                      </select>
-                      <Button size="sm" variant={member.isActive ? "danger" : "secondary"} onClick={() => changeStaff(member.id, { isActive: !member.isActive })}><UserX />{member.isActive ? "إيقاف" : "تفعيل"}</Button>
-                    </div> : null}
-                  </div>
+              {staff.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
+                  لا يوجد مستخدمون إضافيون حتى الآن.
                 </div>
-              ))}
+              ) : null}
+
+              {staff.map((member) => {
+                const isEditing =
+                  editingId === member.id;
+
+                return (
+                  <div
+                    key={member.id}
+                    className="rounded-xl border border-line p-4"
+                  >
+                    {/* User header */}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium">
+                              {member.name ||
+                                member.username}
+                            </p>
+
+                            <span className="rounded-full bg-teal/10 px-2 py-0.5 text-[11px] text-teal">
+                              {member.role ===
+                              "owner"
+                                ? "مالك المعمل"
+                                : roleLabels[
+                                    member.role
+                                  ]}
+                            </span>
+
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[11px] ${
+                                member.isActive
+                                  ? "bg-ok/10 text-ok"
+                                  : "bg-high/10 text-high"
+                              }`}
+                            >
+                              {member.isActive
+                                ? "نشط"
+                                : "موقوف"}
+                            </span>
+                          </div>
+
+                          <p
+                            className="mt-1 text-xs text-muted"
+                            dir="ltr"
+                          >
+                            {member.username}
+                          </p>
+                        </div>
+
+                        {member.role !==
+                        "owner" ? (
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                isEditing
+                                  ? cancelEditing()
+                                  : startEditing(
+                                      member,
+                                    )
+                              }
+                            >
+                              {isEditing ? (
+                                <>
+                                  <ChevronUp />
+                                  إغلاق
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown />
+                                  تعديل الصلاحيات
+                                </>
+                              )}
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant={
+                                member.isActive
+                                  ? "danger"
+                                  : "secondary"
+                              }
+                              disabled={loading}
+                              onClick={() =>
+                                changeActive(
+                                  member,
+                                )
+                              }
+                            >
+                              <UserX />
+
+                              {member.isActive
+                                ? "إيقاف"
+                                : "تفعيل"}
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Permission summary */}
+                      {member.role !==
+                      "owner" ? (
+                        <div className="rounded-lg bg-paper p-3">
+                          <p className="text-xs text-muted">
+                            الصلاحيات الحالية
+                          </p>
+
+                          <p className="mt-1 text-sm font-medium">
+                            {countEnabled(
+                              member.permissions,
+                            )}{" "}
+                            صلاحية مفعلة
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg bg-teal/5 p-3 text-sm text-teal">
+                          👑 مالك المعمل لديه جميع
+                          الصلاحيات تلقائيًا.
+                        </div>
+                      )}
+
+                      {/* Edit permissions */}
+                      {isEditing ? (
+                        <div className="border-t border-line pt-4">
+                          <div className="space-y-4">
+                            <div className="space-y-1.5">
+                              <Label>
+                                نوع المستخدم
+                              </Label>
+
+                              <select
+                                className="flex h-11 w-full rounded-sm border border-line bg-elevated px-3 text-sm"
+                                value={
+                                  editingRole
+                                }
+                                onChange={(event) =>
+                                  setEditingRole(
+                                    event.target
+                                      .value as Exclude<
+                                      LabRole,
+                                      "owner"
+                                    >,
+                                  )
+                                }
+                              >
+                                <option value="supervisor">
+                                  مشرف
+                                </option>
+
+                                <option value="technician">
+                                  فني معمل
+                                </option>
+
+                                <option value="reviewer">
+                                  مراجع
+                                </option>
+
+                                <option value="viewer">
+                                  مشاهد
+                                </option>
+                              </select>
+                            </div>
+
+                            <PermissionEditor
+                              permissions={
+                                editingPermissions
+                              }
+                              onToggle={(
+                                permission,
+                              ) =>
+                                togglePermission(
+                                  permission,
+                                  editingPermissions,
+                                  setEditingPermissions,
+                                )
+                              }
+                              onGroupChange={(
+                                group,
+                                enabled,
+                              ) =>
+                                setPermissionGroup(
+                                  group,
+                                  enabled,
+                                  editingPermissions,
+                                  setEditingPermissions,
+                                )
+                              }
+                            />
+
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                disabled={loading}
+                                onClick={() =>
+                                  saveEditing(
+                                    member,
+                                  )
+                                }
+                              >
+                                <Check />
+                                {loading
+                                  ? "جارٍ الحفظ…"
+                                  : "حفظ التعديلات"}
+                              </Button>
+
+                              <Button
+                                variant="secondary"
+                                disabled={loading}
+                                onClick={
+                                  cancelEditing
+                                }
+                              >
+                                إلغاء
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
 
+          {/* Add user */}
           <section className="rounded-xl border border-line bg-elevated p-5 sm:p-6">
-            <div className="mb-6 flex items-center gap-3"><div className="grid size-10 place-items-center rounded-lg bg-teal/10 text-teal"><UserPlus className="size-5" /></div><div><h3 className="font-display text-xl font-semibold">إضافة موظف</h3><p className="text-sm text-muted">كل موظف له تسجيل دخول مستقل.</p></div></div>
-            <form onSubmit={submit} className="space-y-4">
-              <Field label="اسم الموظف" value={name} onChange={setName} placeholder="أحمد محمد" />
-              <Field label="اسم المستخدم" value={username} onChange={setUsername} required placeholder="ahmed_lab" dir="ltr" />
-              <Field label="كلمة المرور" value={password} onChange={setPassword} required type="password" minLength={8} placeholder="8 أحرف على الأقل" dir="ltr" />
-              <div className="space-y-1.5"><Label htmlFor="role">الصلاحية</Label><select id="role" className="flex h-11 w-full rounded-sm border border-line bg-elevated px-3 text-sm" value={role} onChange={(e) => setRole(e.target.value as Exclude<LabRole, "owner">)}><option value="technician">فني معمل — إنشاء ومشاهدة التقارير</option><option value="reviewer">مراجع — إنشاء ومشاهدة التقارير</option><option value="viewer">مشاهد — مشاهدة التقارير فقط</option></select></div>
-              <Button type="submit" size="lg" disabled={loading}>{loading ? "جارٍ إنشاء الحساب…" : "إنشاء حساب الموظف"}</Button>
+            <div className="mb-6 flex items-center gap-3">
+              <div className="grid size-10 place-items-center rounded-lg bg-teal/10 text-teal">
+                <UserPlus className="size-5" />
+              </div>
+
+              <div>
+                <h3 className="font-display text-xl font-semibold">
+                  إضافة مستخدم
+                </h3>
+
+                <p className="text-sm text-muted">
+                  كل مستخدم له تسجيل دخول مستقل.
+                </p>
+              </div>
+            </div>
+
+            <form
+              onSubmit={submit}
+              className="space-y-5"
+            >
+              <Field
+                label="اسم الموظف"
+                value={name}
+                onChange={setName}
+                placeholder="أحمد محمد"
+              />
+
+              <Field
+                label="اسم المستخدم"
+                value={username}
+                onChange={setUsername}
+                required
+                placeholder="ahmed_lab"
+                dir="ltr"
+              />
+
+              <Field
+                label="كلمة المرور"
+                value={password}
+                onChange={setPassword}
+                required
+                type="password"
+                minLength={8}
+                placeholder="8 أحرف على الأقل"
+                dir="ltr"
+              />
+
+              <div className="space-y-1.5">
+                <Label htmlFor="role">
+                  نوع المستخدم
+                </Label>
+
+                <select
+                  id="role"
+                  className="flex h-11 w-full rounded-sm border border-line bg-elevated px-3 text-sm"
+                  value={role}
+                  onChange={(event) =>
+                    setRole(
+                      event.target
+                        .value as Exclude<
+                        LabRole,
+                        "owner"
+                      >,
+                    )
+                  }
+                >
+                  <option value="supervisor">
+                    مشرف
+                  </option>
+
+                  <option value="technician">
+                    فني معمل
+                  </option>
+
+                  <option value="reviewer">
+                    مراجع
+                  </option>
+
+                  <option value="viewer">
+                    مشاهد
+                  </option>
+                </select>
+              </div>
+
+              {/* New user permissions */}
+              <PermissionEditor
+                permissions={permissions}
+                onToggle={(permission) =>
+                  togglePermission(
+                    permission,
+                    permissions,
+                    setPermissions,
+                  )
+                }
+                onGroupChange={(
+                  group,
+                  enabled,
+                ) =>
+                  setPermissionGroup(
+                    group,
+                    enabled,
+                    permissions,
+                    setPermissions,
+                  )
+                }
+              />
+
+              <Button
+                type="submit"
+                size="lg"
+                disabled={loading}
+                className="w-full"
+              >
+                <UserPlus />
+
+                {loading
+                  ? "جارٍ إنشاء الحساب…"
+                  : "إنشاء حساب المستخدم"}
+              </Button>
             </form>
           </section>
         </div>
@@ -125,6 +841,192 @@ function TeamPage() {
   );
 }
 
-function Field({ label, value, onChange, required, placeholder, dir, type = "text", minLength }: { label: string; value: string; onChange: (value: string) => void; required?: boolean; placeholder?: string; dir?: "ltr" | "rtl"; type?: string; minLength?: number }) {
-  return <div className="space-y-1.5"><Label>{label}</Label><Input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} minLength={minLength} placeholder={placeholder} dir={dir} /></div>;
+function PermissionEditor({
+  permissions,
+  onToggle,
+  onGroupChange,
+}: {
+  permissions: LabPermissions;
+  onToggle: (
+    permission: LabPermission,
+  ) => void;
+  onGroupChange: (
+    group: LabPermission[],
+    enabled: boolean,
+  ) => void;
+}) {
+  return (
+    <div className="space-y-4 rounded-xl border border-line bg-paper p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h4 className="font-medium">
+            صلاحيات المستخدم 🔐
+          </h4>
+
+          <p className="mt-1 text-xs text-muted">
+            حدد العمليات التي يسمح له بتنفيذها.
+          </p>
+        </div>
+      </div>
+
+      {/* Patients */}
+      <PermissionGroup
+        title="المرضى 👥"
+        permissions={patientPermissions}
+        values={permissions}
+        onToggle={onToggle}
+        onGroupChange={onGroupChange}
+      />
+
+      {/* Reports */}
+      <PermissionGroup
+        title="التقارير 🧾"
+        permissions={reportPermissions}
+        values={permissions}
+        onToggle={onToggle}
+        onGroupChange={onGroupChange}
+      />
+
+      {/* Users */}
+      <div className="rounded-lg border border-line bg-elevated p-3">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-0.5 size-4 accent-teal"
+            checked={
+              permissions["users.manage"] ===
+              true
+            }
+            onChange={() =>
+              onToggle("users.manage")
+            }
+          />
+
+          <span>
+            <span className="block text-sm font-medium">
+              إدارة مستخدمي المعمل
+            </span>
+
+            <span className="mt-0.5 block text-xs text-muted">
+              إضافة وتعديل وإيقاف مستخدمي نفس
+              المعمل.
+            </span>
+          </span>
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function PermissionGroup({
+  title,
+  permissions,
+  values,
+  onToggle,
+  onGroupChange,
+}: {
+  title: string;
+  permissions: LabPermission[];
+  values: LabPermissions;
+  onToggle: (
+    permission: LabPermission,
+  ) => void;
+  onGroupChange: (
+    group: LabPermission[],
+    enabled: boolean,
+  ) => void;
+}) {
+  const allEnabled = permissions.every(
+    (permission) =>
+      values[permission] === true,
+  );
+
+  return (
+    <div className="rounded-lg border border-line bg-elevated p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h5 className="text-sm font-semibold">
+          {title}
+        </h5>
+
+        <button
+          type="button"
+          className="text-xs text-teal hover:underline"
+          onClick={() =>
+            onGroupChange(
+              permissions,
+              !allEnabled,
+            )
+          }
+        >
+          {allEnabled
+            ? "إلغاء الكل"
+            : "تحديد الكل"}
+        </button>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {permissions.map((permission) => (
+          <label
+            key={permission}
+            className="flex cursor-pointer items-start gap-3 rounded-lg border border-line/70 p-3 transition hover:bg-paper"
+          >
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-teal"
+              checked={
+                values[permission] === true
+              }
+              onChange={() =>
+                onToggle(permission)
+              }
+            />
+
+            <span className="text-sm">
+              {permissionLabels[permission]}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  required,
+  placeholder,
+  dir,
+  type = "text",
+  minLength,
+}: {
+  label: string;
+  value: string;
+  onChange: (
+    value: string,
+  ) => void;
+  required?: boolean;
+  placeholder?: string;
+  dir?: "ltr" | "rtl";
+  type?: string;
+  minLength?: number;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+
+      <Input
+        type={type}
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        required={required}
+        minLength={minLength}
+        placeholder={placeholder}
+        dir={dir}
+      />
+    </div>
+  );
 }
