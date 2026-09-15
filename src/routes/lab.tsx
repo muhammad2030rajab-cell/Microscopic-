@@ -6,6 +6,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+
 import {
   FileText,
   FlaskConical,
@@ -13,21 +14,40 @@ import {
   Settings2,
   UserRoundSearch,
   ClipboardList,
+  UsersRound,
 } from "lucide-react";
 
 import { AppShell } from "@/components/layout/app-shell";
-import { UserButton, useCurrentUserState } from "@/lib/auth/gates";
-import { getCurrentLab, getLabDashboardStats } from "@/lib/lab-access";
+import {
+  UserButton,
+  useCurrentUserState,
+} from "@/lib/auth/gates";
+
+import {
+  getCurrentLab,
+  getLabDashboardStats,
+} from "@/lib/lab-access";
+
+import {
+  getCurrentLabPermissions,
+  type LabPermission,
+} from "@/lib/lab-users";
 
 export const Route = createFileRoute("/lab")({
   loader: async () => {
     try {
-      const [lab, stats] = await Promise.all([
-        getCurrentLab(),
-        getLabDashboardStats(),
-      ]);
+      const [lab, stats, access] =
+        await Promise.all([
+          getCurrentLab(),
+          getLabDashboardStats(),
+          getCurrentLabPermissions(),
+        ]);
 
-      return { lab, stats };
+      return {
+        lab,
+        stats,
+        access,
+      };
     } catch {
       return {
         lab: null,
@@ -37,6 +57,12 @@ export const Route = createFileRoute("/lab")({
           pendingReview: 0,
           approved: 0,
           critical: 0,
+        },
+        access: {
+          labId: null,
+          labUserId: null,
+          role: null,
+          permissions: {},
         },
       };
     }
@@ -50,9 +76,16 @@ function LabDashboard() {
     select: (state) => state.location.pathname,
   });
 
-  const { user, isPending } = useCurrentUserState();
+  const {
+    user,
+    isPending,
+  } = useCurrentUserState();
 
-  const { lab, stats } = Route.useLoaderData();
+  const {
+    lab,
+    stats,
+    access,
+  } = Route.useLoaderData();
 
   /*
    * Child routes such as:
@@ -74,19 +107,45 @@ function LabDashboard() {
   }
 
   if (!user || !lab) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
   }
 
   if (!lab.is_profile_complete) {
-    return <Navigate to="/lab/setup" />;
+    return (
+      <Navigate
+        to="/lab/setup"
+        replace
+      />
+    );
   }
 
-  const greetingName = lab.doctor_name
-    ? `د. ${lab.doctor_name}`
-    : lab.lab_name;
+  /*
+   * Owner has all permissions automatically.
+   * Other users only get the permissions
+   * assigned by the lab manager.
+   */
+  const can = (
+    permission: LabPermission,
+  ) => {
+    return (
+      access.role === "owner" ||
+      access.permissions?.[permission] === true
+    );
+  };
+
+  const greetingName =
+    lab.doctor_name
+      ? `د. ${lab.doctor_name}`
+      : lab.lab_name;
 
   return (
     <AppShell>
+      {/* Mobile header */}
       <header className="mb-4 flex items-center justify-between gap-3 lg:hidden">
         <div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted">
@@ -101,6 +160,7 @@ function LabDashboard() {
         <UserButton />
       </header>
 
+      {/* Welcome section */}
       <section className="relative overflow-hidden rounded-2xl bg-ink p-6 text-paper sm:p-8">
         <div className="relative z-10">
           <p className="text-sm text-paper/60">
@@ -124,8 +184,10 @@ function LabDashboard() {
         </div>
       </section>
 
+      {/* Dashboard actions */}
       <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {lab.role !== "viewer" ? (
+        {/* New report */}
+        {can("reports.create") ? (
           <GridAction
             to="/new"
             icon={<FlaskConical />}
@@ -134,13 +196,17 @@ function LabDashboard() {
           />
         ) : null}
 
-        <GridAction
-          to="/reports"
-          icon={<FileText />}
-          color="indigo"
-          label="أرشيف التقارير"
-        />
+        {/* Reports archive */}
+        {can("reports.view") ? (
+          <GridAction
+            to="/reports"
+            icon={<FileText />}
+            color="indigo"
+            label="أرشيف التقارير"
+          />
+        ) : null}
 
+        {/* Test catalog */}
         <GridAction
           to="/catalog"
           icon={<ClipboardList />}
@@ -148,14 +214,28 @@ function LabDashboard() {
           label="قائمة التحاليل"
         />
 
-        <GridAction
-          to="/patients"
-          icon={<UserRoundSearch />}
-          color="amber"
-          label="المرضى"
-        />
+        {/* Patients */}
+        {can("patients.view") ? (
+          <GridAction
+            to="/patients"
+            icon={<UserRoundSearch />}
+            color="amber"
+            label="المرضى"
+          />
+        ) : null}
 
-        {lab.role === "owner" ? (
+        {/* Team management */}
+        {can("users.manage") ? (
+          <GridAction
+            to="/team"
+            icon={<UsersRound />}
+            color="teal"
+            label="إدارة المستخدمين"
+          />
+        ) : null}
+
+        {/* Settings */}
+        {access.role === "owner" ? (
           <GridAction
             to="/settings"
             icon={<Settings2 />}
@@ -165,6 +245,7 @@ function LabDashboard() {
         ) : null}
       </section>
 
+      {/* Statistics */}
       <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard
           label="إجمالي المرضى"
@@ -182,7 +263,9 @@ function LabDashboard() {
           label="تحت المراجعة"
           value={stats.pendingReview}
           icon="🔎"
-          emphasis={stats.pendingReview > 0}
+          emphasis={
+            stats.pendingReview > 0
+          }
         />
 
         <StatCard
@@ -195,7 +278,9 @@ function LabDashboard() {
           label="نتائج حرجة"
           value={stats.critical}
           icon="🚨"
-          emphasis={stats.critical > 0}
+          emphasis={
+            stats.critical > 0
+          }
         />
       </section>
     </AppShell>
@@ -204,10 +289,14 @@ function LabDashboard() {
 
 const GRID_COLORS = {
   teal: "bg-teal/10 text-teal",
-  indigo: "bg-indigo-500/10 text-indigo-600",
-  violet: "bg-violet-500/10 text-violet-600",
-  amber: "bg-amber-500/10 text-amber-600",
-  slate: "bg-slate-500/10 text-slate-600",
+  indigo:
+    "bg-indigo-500/10 text-indigo-600",
+  violet:
+    "bg-violet-500/10 text-violet-600",
+  amber:
+    "bg-amber-500/10 text-amber-600",
+  slate:
+    "bg-slate-500/10 text-slate-600",
 } as const;
 
 function GridAction({
@@ -253,11 +342,16 @@ function StatCard({
   return (
     <div
       className={`rounded-xl border bg-elevated p-4 ${
-        emphasis ? "border-amber-300" : "border-line"
+        emphasis
+          ? "border-amber-300"
+          : "border-line"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xl" aria-hidden="true">
+        <span
+          className="text-xl"
+          aria-hidden="true"
+        >
           {icon}
         </span>
 
