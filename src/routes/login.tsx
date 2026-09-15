@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   LockKeyhole,
   Microscope,
@@ -18,6 +18,8 @@ export const Route = createFileRoute("/login")({
   component: Login,
 });
 
+type AccountType = "admin" | "user";
+
 const WHATSAPP_NUMBER = "201120660398";
 
 const WHATSAPP_MESSAGE = `السلام عليكم د. محمد رجب 👋
@@ -32,10 +34,13 @@ const WHATSAPP_MESSAGE = `السلام عليكم د. محمد رجب 👋
 function Login() {
   const navigate = useNavigate();
 
+  const [accountType, setAccountType] = useState<AccountType>("admin");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const isAdmin = accountType === "admin";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,7 +50,7 @@ function Login() {
 
     const value = login.trim();
 
-    const email = value.includes("@")
+    const email = isAdmin
       ? value
       : `${value.toLowerCase()}@lab.local`;
 
@@ -108,6 +113,215 @@ function Login() {
             لوحة تحكم مركزية لإدارة معامل التحاليل الطبية
           </h1>
 
+          <p className="mt-5 max-w-lg text-sm leading-7 text-paper/65">
+            نظام متكامل لإدارة المعامل، المستخدمين، التقارير والصلاحيات من
+            مكان واحد.
+          </p>
+        </section>
+
+        {/* كارت الدخول */}
+        <section className="mx-auto w-full max-w-md rounded-2xl border border-line bg-elevated p-6 shadow-sm sm:p-8">
+
+          <div className="mb-7 text-center">
+            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-teal/10 text-teal">
+              <ShieldCheck className="size-6" />
+            </div>
+
+            <h1 className="font-display text-2xl font-semibold">
+              تسجيل الدخول
+            </h1>
+
+            <p className="mt-2 text-sm text-muted">
+              اختر نوع الحساب
+            </p>
+          </div>
+
+          {/* اختيار نوع الحساب */}
+          <div className="mb-6 grid grid-cols-2 gap-3">
+
+            {/* المدير */}
+            <button
+              type="button"
+              onClick={() => {
+                setAccountType("admin");
+                setLogin("");
+                setPassword("");
+                setError("");
+              }}
+              className={`rounded-xl border p-4 text-center transition-all ${
+                isAdmin
+                  ? "border-teal bg-teal/10 text-teal shadow-sm"
+                  : "border-line bg-paper-2 text-muted hover:border-teal/40"
+              }`}
+            >
+              <div
+                className={`mx-auto mb-2 flex size-10 items-center justify-center rounded-full ${
+                  isAdmin
+                    ? "bg-teal text-teal-fg"
+                    : "bg-ink/10 text-ink"
+                }`}
+              >
+                <ShieldCheck className="size-5" />
+              </div>
+
+              <p className="font-semibold">المدير</p>
+
+              <p className="mt-1 text-xs">
+                إدارة النظام
+              </p>
+            </button>
+
+            {/* المستخدم */}
+            <button
+              type="button"
+              onClick={() => {
+                setAccountType("user");
+                setLogin("");
+                setPassword("");
+                setError("");
+              }}
+              className={`rounded-xl border p-4 text-center transition-all ${
+                !isAdmin
+                  ? "border-teal bg-teal/10 text-teal shadow-sm"
+                  : "border-line bg-paper-2 text-muted hover:border-teal/40"
+              }`}
+            >
+              <div
+                className={`mx-auto mb-2 flex size-10 items-center justify-center rounded-full ${
+                  !isAdmin
+                    ? "bg-teal text-teal-fg"
+                    : "bg-ink/10 text-ink"
+                }`}
+              >
+                <UserRound className="size-5" />
+              </div>
+
+              <p className="font-semibold">المستخدم</p>
+
+              <p className="mt-1 text-xs">
+                إدارة المعمل
+              </p>
+            </button>
+          </div>
+
+          {/* نوع الدخول الحالي */}
+          <div className="mb-5 rounded-lg bg-paper-2 px-3 py-2 text-center text-sm">
+            {isAdmin ? (
+              <span>
+                👨‍💼 تسجيل دخول <strong>المدير</strong>
+              </span>
+            ) : (
+              <span>
+                🧑‍🔬 تسجيل دخول <strong>المستخدم</strong>
+              </span>
+            )}
+          </div>
+
+          <form onSubmit={submit} className="space-y-4">
+
+            {/* اسم الدخول */}
+            <div className="space-y-1.5">
+              <Label htmlFor="login">
+                {isAdmin
+                  ? "البريد الإلكتروني للمدير"
+                  : "اسم المستخدم"}
+              </Label>
+
+              <Input
+                id="login"
+                type={isAdmin ? "email" : "text"}
+                autoComplete="username"
+                value={login}
+                onChange={(e) => setLogin(e.target.value)}
+                required
+                dir="ltr"
+                placeholder={
+                  isAdmin
+                    ? "admin@example.com"
+                    : "lab_username"
+                }
+              />
+            </div>
+
+            {/* كلمة المرور */}
+            <div className="space-y-1.5">
+              <Label htmlFor="password">
+                كلمة المرور
+              </Label>
+
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  dir="ltr"
+                  className="ps-9"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            {/* الخطأ */}
+            {error ? (
+              <p className="rounded-lg border border-high/20 bg-high/5 px-3 py-2 text-sm text-high">
+                {error}
+              </p>
+            ) : null}
+
+            {/* دخول */}
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={loading}
+            >
+              {loading
+                ? "جارٍ تسجيل الدخول…"
+                : isAdmin
+                  ? "دخول المدير"
+                  : "دخول المستخدم"}
+            </Button>
+          </form>
+
+          {/* WhatsApp للمستخدم فقط */}
+          {!isAdmin ? (
+            <div className="mt-6 rounded-xl border border-line bg-paper-2 p-4 text-center">
+
+              <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-full bg-[#25D366]/10 text-[#25D366]">
+                <MessageCircle className="size-5" />
+              </div>
+
+              <p className="text-sm font-medium">
+                ليس لديك حساب؟
+              </p>
+
+              <p className="mt-1 text-xs text-muted">
+                تواصل معنا لطلب إنشاء حساب للمعمل
+              </p>
+
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                <MessageCircle className="size-4" />
+                طلب إنشاء حساب عبر WhatsApp
+              </a>
+            </div>
+          ) : null}
+
+        </section>
+      </div>
+    </main>
+  );
+}
           <p className="mt-5 max-w-lg text-sm leading-7 text-paper/65">
             نظام متكامل لإدارة المعامل، المستخدمين، التقارير، والصلاحيات من
             مكان واحد.
