@@ -54,6 +54,86 @@ export const ALL_LAB_PERMISSIONS: LabPermission[] = [
   "users.manage",
 ];
 
+/**
+ * الحصول على بيانات وصلاحيات المستخدم الحالي داخل المعمل.
+ *
+ * Owner يحصل تلقائيًا على كل الصلاحيات.
+ */
+export const getCurrentLabPermissions = createServerFn({
+  method: "GET",
+})
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const sql = await getSql();
+
+    const rows = await sql<{
+      id: string;
+      lab_id: string;
+      role: LabRole;
+    }>`
+      select id, lab_id, role
+      from lab_users
+      where auth_user_id = ${context.userId}
+        and is_active = true
+      limit 1
+    `;
+
+    if (!rows.length) {
+      throw new Error("LAB_ACCESS_REQUIRED");
+    }
+
+    const user = rows[0];
+
+    if (user.role === "owner") {
+      return {
+        labId: user.lab_id,
+        labUserId: user.id,
+        role: user.role,
+        permissions: Object.fromEntries(
+          ALL_LAB_PERMISSIONS.map((permission) => [
+            permission,
+            true,
+          ]),
+        ) as LabPermissions,
+      };
+    }
+
+    const permissionRows = await sql<{
+      permissions: LabPermissions | string;
+    }>`
+      select permissions
+      from lab_user_permissions
+      where lab_user_id = ${user.id}
+      limit 1
+    `;
+
+    let permissions: LabPermissions = {};
+
+    if (permissionRows.length) {
+      const raw = permissionRows[0].permissions;
+
+      if (typeof raw === "string") {
+        try {
+          permissions = JSON.parse(raw) as LabPermissions;
+        } catch {
+          permissions = {};
+        }
+      } else {
+        permissions = raw || {};
+      }
+    }
+
+    return {
+      labId: user.lab_id,
+      labUserId: user.id,
+      role: user.role,
+      permissions,
+    };
+  });
+
+/**
+ * دالة داخلية تستخدمها العمليات المحمية في السيرفر.
+ */
 async function getLabUserContext(userId: string) {
   const sql = await getSql();
 
