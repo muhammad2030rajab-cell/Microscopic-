@@ -1,4 +1,10 @@
-import { createFileRoute, Navigate, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Navigate,
+  Link,
+  Outlet,
+  useRouterState,
+} from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import {
   FileText,
@@ -8,6 +14,7 @@ import {
   UserRoundSearch,
   ClipboardList,
 } from "lucide-react";
+
 import { AppShell } from "@/components/layout/app-shell";
 import { UserButton, useCurrentUserState } from "@/lib/auth/gates";
 import { getCurrentLab, getLabDashboardStats } from "@/lib/lab-access";
@@ -34,13 +41,11 @@ export const Route = createFileRoute("/lab")({
       };
     }
   },
+
   component: LabDashboard,
 });
 
 function LabDashboard() {
-  // IMPORTANT:
-  // All hooks MUST run before any conditional return.
-  // This keeps the hook order identical on every render.
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -49,7 +54,13 @@ function LabDashboard() {
 
   const { lab, stats } = Route.useLoaderData();
 
-  // Child routes render through Outlet.
+  /*
+   * Child routes such as:
+   * /lab/setup
+   * /lab/...
+   *
+   * are rendered through Outlet.
+   */
   if (pathname !== "/lab") {
     return <Outlet />;
   }
@@ -258,156 +269,6 @@ function StatCard({
       <p className="mt-2 text-xs text-muted">
         {label}
       </p>
-    </div>
-  );
-}            color="teal"
-            label="تقرير جديد"
-          />
-        ) : null}
-
-        <GridAction
-          to="/reports"
-          icon={<FileText />}
-          color="indigo"
-          label="أرشيف التقارير"
-        />
-
-        <GridAction
-          to="/catalog"
-          icon={<ClipboardList />}
-          color="violet"
-          label="قائمة التحاليل"
-        />
-
-        <GridAction
-          to="/patients"
-          icon={<UserRoundSearch />}
-          color="amber"
-          label="المرضى"
-        />
-
-        {lab.role === "owner" ? (
-          <GridAction
-            to="/settings"
-            icon={<Settings2 />}
-            color="slate"
-            label="الإعدادات"
-          />
-        ) : null}
-      </section>
-
-      <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard
-          label="إجمالي المرضى"
-          value={stats.patients}
-          icon="👥"
-        />
-
-        <StatCard
-          label="تقارير اليوم"
-          value={stats.reportsToday}
-          icon="🧾"
-        />
-
-        <StatCard
-          label="تحت المراجعة"
-          value={stats.pendingReview}
-          icon="🔎"
-          emphasis={stats.pendingReview > 0}
-        />
-
-        <StatCard
-          label="تقارير معتمدة"
-          value={stats.approved}
-          icon="✅"
-        />
-
-        <StatCard
-          label="نتائج حرجة"
-          value={stats.critical}
-          icon="🚨"
-          emphasis={stats.critical > 0}
-        />
-      </section>
-    </AppShell>
-  );
-}
-
-const GRID_COLORS = {
-  teal: "bg-teal/10 text-teal",
-  indigo: "bg-indigo-500/10 text-indigo-600",
-  violet: "bg-violet-500/10 text-violet-600",
-  amber: "bg-amber-500/10 text-amber-600",
-  slate: "bg-slate-500/10 text-slate-600",
-} as const;
-
-function GridAction({
-  to,
-  icon,
-  color,
-  label,
-}: {
-  to: string;
-  icon: ReactNode;
-  color: keyof typeof GRID_COLORS;
-  label: string;
-}) {
-  return (
-    <Link
-      to={to}
-      className="flex flex-col items-center gap-2.5 rounded-xl border border-line bg-elevated p-4 text-center transition hover:-translate-y-0.5 hover:shadow-sm sm:p-5"
-    >
-      <span
-        className={`grid size-12 place-items-center rounded-2xl ${GRID_COLORS[color]}`}
-      >
-        {icon}
-      </span>
-
-      <span className="text-sm font-medium">
-        {label}
-      </span>
-    </Link>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  emphasis = false,
-}: {
-  label: string;
-  value: number;
-  icon: string;
-  emphasis?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-xl border bg-elevated p-4 ${
-        emphasis ? "border-amber-300" : "border-line"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xl" aria-hidden="true">
-          {icon}
-        </span>
-
-        <span className="font-display text-2xl font-semibold">
-          {value}
-        </span>
-      </div>
-
-      <p className="mt-2 text-xs text-muted">
-        {label}
-      </p>
-    </div>
-  );
-}    <div className={`rounded-xl border bg-elevated p-4 ${emphasis ? "border-amber-300" : "border-line"}`}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xl" aria-hidden="true">{icon}</span>
-        <span className="font-display text-2xl font-semibold">{value}</span>
-      </div>
-      <p className="mt-2 text-xs text-muted">{label}</p>
     </div>
   );
 }
